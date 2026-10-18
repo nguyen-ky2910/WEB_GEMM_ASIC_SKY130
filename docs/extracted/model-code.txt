@@ -1,0 +1,1017 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ProcessingElement 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: full-bleed WebGL stage; an instrument panel docked right (a bottom sheet on phones);
+   title and the selection card float over the stage. Deliberately one dark look, like a layout viewer. */
+:root {
+  color-scheme: dark;
+  --stage: #0c0e12;
+  --panel: #15181f;
+  --panel-2: #1b1f28;
+  --line: #2a303b;
+  --fg: #e6e8ed;
+  --muted: #959cab;
+  --faint: #6b7281;
+  --sel: #ffd84d;
+  --sel-ink: #1d1700;
+  --display: "IBM Plex Sans Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", Roboto, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --panel-w: 312px;
+}
+html, body { height: 100%; }
+body { background: var(--stage); color: var(--fg); font-family: var(--body); font-size: 13px; overflow: hidden; }
+#stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#stage.dragging { cursor: grabbing; }
+.hud {
+  position: fixed; inset: 0; pointer-events: none;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: calc(14px + env(safe-area-inset-top, 0px)) calc(14px + env(safe-area-inset-bottom, 0px));
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--panel-w); grid-template-rows: auto 1fr auto; gap: 14px;
+}
+.hud > * { pointer-events: auto; }
+.title { grid-column: 1; grid-row: 1; align-self: start; max-width: 520px; pointer-events: none; }
+.title h1 { font-family: var(--display); font-weight: 600; font-size: 22px; letter-spacing: 0.01em; margin: 0; line-height: 1.15; text-wrap: balance; }
+.title p { margin: 4px 0 0; color: var(--muted); line-height: 1.45; }
+.title .dims { font-family: var(--mono); font-size: 12px; color: var(--fg); font-variant-numeric: tabular-nums; }
+.ctl { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; pointer-events: auto; }
+.hud.bare .panel, .hud.bare .card, .hud.bare .tl { display: none; }
+.checks + .slider { margin-top: 10px; }
+.bottom { grid-column: 1; grid-row: 3; align-self: end; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; }
+.card {
+  width: min(380px, 100%);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+  display: grid; gap: 6px; box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+}
+.card .kicker { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.card .name { font-family: var(--mono); font-size: 13px; word-break: break-all; color: var(--sel); }
+.card .desc { color: var(--fg); line-height: 1.4; }
+.card .meta { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.5; }
+.card .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.hint { color: var(--muted); line-height: 1.45; }
+.tl {
+  width: min(780px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; display: grid; gap: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+}
+.tl-row { display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap; }
+.tl-row input[type=range] { flex: 1 1 200px; min-width: 120px; accent-color: var(--sel); margin: 0; }
+.tl-cyc { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tl-vals { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.55; }
+.tl-vals b { color: var(--fg); font-weight: 500; }
+.tl-vals .ph { color: var(--sel); }
+.tl-opts { color: var(--muted); font-size: 12px; gap: 6px 16px; }
+.tl-opts output { font-family: var(--mono); color: var(--fg); min-width: 34px; }
+.tl-opts input[type=range] { flex: 0 1 110px; min-width: 80px; }
+.glow-key { display: inline-flex; align-items: center; gap: 6px; }
+.glow-key i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+.panel {
+  grid-column: 2; grid-row: 1 / span 3; min-height: 0; overflow: hidden;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  display: flex; flex-direction: column;
+}
+.panel-head { display: none; }
+.panel-body { overflow-y: auto; padding: 14px 14px 18px; display: grid; gap: 18px; overscroll-behavior: contain; }
+section h2 { font-family: var(--display); font-weight: 600; font-size: 12px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.checks { display: grid; gap: 6px; }
+label.chk { display: flex; align-items: center; gap: 9px; cursor: pointer; line-height: 1.3; }
+label.chk input { accent-color: var(--sel); width: 15px; height: 15px; margin: 0; flex: none; }
+label.chk kbd { margin-left: auto; }
+kbd { font-family: var(--mono); font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; background: var(--panel-2); }
+.slider { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }
+.slider + .slider { margin-top: 10px; }
+.slider output { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--fg); }
+.slider input { grid-column: 1 / span 2; width: 100%; accent-color: var(--sel); margin: 0; }
+.layers { display: grid; gap: 1px; }
+.layer { display: grid; grid-template-columns: 15px 12px 66px minmax(0,1fr) auto; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; }
+.layer input { accent-color: var(--sel); width: 15px; height: 15px; margin: 0; }
+.sw { width: 12px; height: 12px; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
+.layer .ln { font-family: var(--mono); font-size: 12px; }
+.layer .lz { font-family: var(--mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.layer .lc { font-family: var(--mono); font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; text-align: right; }
+.layer.off .ln, .layer.off .lz { color: var(--faint); }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+button {
+  font: inherit; font-size: 12px; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 10px; cursor: pointer;
+}
+button:hover { border-color: #3c4452; }
+button.primary { background: var(--sel); color: var(--sel-ink); border-color: var(--sel); font-weight: 600; }
+button:focus-visible, input:focus-visible, .mrow:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
+.stack { display: flex; height: 10px; border-radius: 3px; overflow: hidden; background: var(--panel-2); }
+.legend { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 8px; }
+.legend div { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--muted); }
+.legend b { font-family: var(--mono); font-weight: 500; color: var(--fg); font-variant-numeric: tabular-nums; margin-left: auto; }
+.legend i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.mlist { display: grid; gap: 1px; margin-top: 10px; }
+.mrow { display: grid; grid-template-columns: minmax(0,1fr) 44px; gap: 2px 8px; padding: 5px 6px; border-radius: 5px; cursor: pointer; }
+.mrow:hover { background: var(--panel-2); }
+.mrow.on { background: #2a2610; }
+.mrow .mn { font-family: var(--mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mrow .mc { font-family: var(--mono); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+.mrow .mf { color: var(--muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mrow .mb { grid-column: 1 / span 2; height: 3px; background: var(--panel-2); border-radius: 2px; overflow: hidden; }
+.mrow .mb span { display: block; height: 100%; }
+.foot { color: var(--faint); font-size: 11.5px; line-height: 1.5; }
+.foot p { margin: 0 0 6px; }
+.err { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--fg); background: var(--stage); }
+
+@media (max-width: 760px) {
+  .hud { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; }
+  .title h1 { font-size: 19px; }
+  .bottom { margin-bottom: 52px; }
+  .card, .tl { width: 100%; }
+  .panel {
+    position: fixed; left: 0; right: 0; bottom: 0; grid-column: auto; grid-row: auto;
+    border-radius: 12px 12px 0 0; border-bottom: 0; max-height: 64%;
+    padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    transform: translateY(calc(100% - 46px - env(safe-area-inset-bottom, 0px))); transition: transform 0.25s ease;
+  }
+  .panel.open { transform: none; }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+    height: 46px; flex: none; padding: 0 max(16px, env(safe-area-inset-left, 0px)); border: 0; border-radius: 0;
+    background: transparent; font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: 0.02em;
+  }
+  .panel-head .grip { width: 36px; height: 4px; border-radius: 2px; background: var(--line); }
+  .panel-body { padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+  .keys { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .panel { transition: none; } }
+</style>
+
+<canvas id="stage" aria-label="Layout 3D của khối ProcessingElement"></canvas>
+<div class="hud">
+  <header class="title">
+    <h1>ProcessingElement</h1>
+    <p>Khối PE của bộ nhân ma trận GEMM 32×32 INT8, layout sky130 sau OpenLane.</p>
+    <p class="dims" id="dims"></p>
+    <div class="ctl">
+      <button type="button" class="primary" id="sigBtn" aria-pressed="false">Tín hiệu chạy</button>
+      <button type="button" class="primary" id="playBtn" aria-pressed="false">Phát hoạt cảnh</button>
+      <button type="button" id="bareBtn" aria-pressed="false">Ẩn bảng điều khiển</button>
+    </div>
+  </header>
+
+  <div class="bottom">
+  <div class="card" id="card" aria-live="polite">
+    <div class="hint" id="hint">Kéo để xoay, chuột phải hoặc hai ngón để dời, cuộn hoặc chụm để phóng to. Bấm vào một cell hoặc một dây để xem nó là gì.</div>
+    <div id="sel" hidden>
+      <div class="kicker" id="selKind"></div>
+      <div class="name" id="selName"></div>
+      <div class="desc" id="selDesc"></div>
+      <div class="meta" id="selMeta"></div>
+      <div class="row">
+        <button type="button" class="primary" id="isoBtn">Chỉ hiện loại này</button>
+        <button type="button" id="clearBtn">Bỏ chọn</button>
+      </div>
+    </div>
+  </div>
+  <div class="tl" id="tl" hidden>
+    <div class="tl-row">
+      <button type="button" class="primary" id="simBtn">Dừng</button>
+      <input type="range" id="simPos" min="0" max="1" step="1" value="0" aria-label="Thời điểm trong mô phỏng">
+      <span class="tl-cyc" id="simCyc"></span>
+    </div>
+    <div class="tl-vals" id="simVals"></div>
+    <div class="tl-row tl-opts">
+      <span class="glow-key"><i style="background:#4cf2ff"></i>lên 1</span>
+      <span class="glow-key"><i style="background:#ffb838"></i>xuống 0</span>
+      <label class="chk"><input type="checkbox" id="optHeat"> Bản đồ nhiệt (tổng số lần đổi)</label>
+      <label class="chk"><input type="checkbox" id="optTopdown" checked> Nhìn thẳng từ trên</label>
+      <label for="simSpeed">Tốc độ</label>
+      <input type="range" id="simSpeed" min="-2" max="3" step="1" value="0">
+      <output id="simSpeedOut" for="simSpeed"></output>
+    </div>
+  </div>
+  </div>
+
+  <aside class="panel" id="panel">
+    <button type="button" class="panel-head" id="sheetBtn" aria-expanded="false" aria-controls="panelBody">
+      <span>Lớp, tách lớp, thành phần cell</span><span class="grip" aria-hidden="true"></span>
+    </button>
+    <div class="panel-body" id="panelBody">
+      <section>
+        <h2>Hiển thị</h2>
+        <div class="checks">
+          <label class="chk"><input type="checkbox" id="optFill" checked> Cell lấp chỗ (fill, decap, tap) <kbd class="keys">1</kbd></label>
+          <label class="chk"><input type="checkbox" id="optTop" checked> Dây nối và lưới nguồn mức top <kbd class="keys">2</kbd></label>
+          <label class="chk"><input type="checkbox" id="optSpin"> Tự xoay <kbd class="keys">A</kbd></label>
+        </div>
+        <div class="btns"><button type="button" id="resetBtn">Về góc nhìn ban đầu <kbd class="keys">R</kbd></button></div>
+      </section>
+
+      <section>
+        <h2>Tách lớp</h2>
+        <div class="slider"><label for="optSep">Khoảng tách giữa các lớp</label><output id="sepOut" for="optSep"></output>
+          <input type="range" id="optSep" min="0" max="14" step="0.5" value="3"></div>
+        <div class="slider"><label for="optThick">Phóng độ dày lớp</label><output id="thickOut" for="optThick"></output>
+          <input type="range" id="optThick" min="1" max="8" step="0.5" value="2"></div>
+      </section>
+
+      <section>
+        <h2>Lát cắt</h2>
+        <div class="checks">
+          <label class="chk"><input type="checkbox" id="optSec"> Chỉ giữ một lát dọc theo trục x <kbd class="keys">S</kbd></label>
+          <label class="chk"><input type="checkbox" id="optSecRun" checked> Cho lát cắt chạy qua lại</label>
+        </div>
+        <div class="slider"><label for="optSecPos">Vị trí lát cắt</label><output id="secPosOut" for="optSecPos"></output>
+          <input type="range" id="optSecPos" min="0" max="1" step="0.005" value="0.5"></div>
+        <div class="slider"><label for="optSecW">Bề rộng lát cắt</label><output id="secWOut" for="optSecW"></output>
+          <input type="range" id="optSecW" min="1" max="40" step="0.5" value="8"></div>
+      </section>
+
+      <section>
+        <h2>Lớp (cao độ thật trong sky130)</h2>
+        <div class="layers" id="layers"></div>
+        <div class="btns">
+          <button type="button" id="allLayers">Bật hết</button>
+          <button type="button" id="metalOnly">Chỉ kim loại</button>
+          <button type="button" id="feolOnly">Chỉ transistor</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Thành phần cell</h2>
+        <div class="stack" id="stack" role="img"></div>
+        <div class="legend" id="legend"></div>
+        <div class="mlist" id="mlist"></div>
+      </section>
+
+      <section class="foot">
+        <p id="src"></p>
+        <p>Cao độ li1 đến met5 lấy theo stack kim loại của sky130. Diff, poly, well và đế được vẽ gần đúng để dễ nhìn.</p>
+        <p id="simNote"></p>
+        <p class="keys">Phím: <kbd>T</kbd> tín hiệu chạy / xem 3D, <kbd>P</kbd> phát hoặc dừng, <kbd>H</kbd> ẩn bảng điều khiển, <kbd>S</kbd> lát cắt, <kbd>1</kbd> cell lấp chỗ, <kbd>2</kbd> dây mức top, <kbd>3</kbd> chỉ hiện loại đang chọn, <kbd>A</kbd> tự xoay, <kbd>R</kbd> góc nhìn ban đầu, <kbd>Esc</kbd> bỏ chọn.</p>
+      </section>
+    </div>
+  </aside>
+</div>
+
+<script>
+(() => {
+"use strict";
+const DATA = JSON.parse(document.getElementById("gds-data").textContent);
+const S = DATA.dbu;                       // um per database unit
+
+// ---- layers: real sky130 BEOL heights (um); FEOL approximate ------------------------------
+const LAYERS = [
+  { k: "substrate", z0: -1.00, z1: -0.45, col: "#2b303a", rank: 0, approx: true },
+  { k: "nwell",     z0: -0.45, z1: -0.05, col: "#4f5869", rank: 1, approx: true },
+  { k: "diff",      z0: -0.05, z1: 0.12,  col: "#e4e4dc", rank: 2, approx: true },
+  { k: "tap",       z0: -0.05, z1: 0.12,  col: "#9db598", rank: 2, approx: true },
+  { k: "poly",      z0: 0.33,  z1: 0.51,  col: "#cc557c", rank: 3, approx: true },
+  { k: "licon",     z0: 0.12,  z1: 0.9361, col: "#606675", rank: 4, approx: true },
+  { k: "li1",       z0: 0.9361, z1: 1.0361, col: "#e8b66e", rank: 5 },
+  { k: "mcon",      z0: 1.0361, z1: 1.3761, col: "#737a8a", rank: 6 },
+  { k: "met1",      z0: 1.3761, z1: 1.7361, col: "#3f72e3", rank: 7 },
+  { k: "via",       z0: 1.7361, z1: 2.0061, col: "#808898", rank: 8 },
+  { k: "met2",      z0: 2.0061, z1: 2.3661, col: "#a9b8d6", rank: 9 },
+  { k: "via2",      z0: 2.3661, z1: 2.7861, col: "#808898", rank: 10 },
+  { k: "met3",      z0: 2.7861, z1: 3.6311, col: "#33a7e4", rank: 11 },
+  { k: "via3",      z0: 3.6311, z1: 4.0211, col: "#808898", rank: 12 },
+  { k: "met4",      z0: 4.0211, z1: 4.8661, col: "#6152d6", rank: 13 },
+  { k: "via4",      z0: 4.8661, z1: 5.3711, col: "#808898", rank: 14 },
+  { k: "met5",      z0: 5.3711, z1: 6.6311, col: "#86bcb3", rank: 15 },
+];
+const NL = LAYERS.length;
+const LIDX = Object.fromEntries(LAYERS.map((l, i) => [l.k, i]));
+const METALS = ["li1", "mcon", "met1", "via", "met2", "via2", "met3", "via3", "met4", "via4", "met5"];
+const FEOL = ["substrate", "nwell", "diff", "tap", "poly", "licon"];
+const hex3 = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+
+// ---- formatting --------------------------------------------------------------------------------
+const nf = (v, d = 0) => v.toLocaleString("vi-VN", { minimumFractionDigits: d, maximumFractionDigits: d });
+const short = n => n.replace(/^sky130_(fd|ef)_sc_hd__/, "");
+const base = n => short(n).replace(/_\d+$/, "");
+const drive = n => (short(n).match(/_(\d+)$/) || [])[1];
+
+function cellFunction(name) {
+  const b = base(name);
+  const fixed = {
+    decap: "Tụ decap, giữ điện áp nguồn ổn định", fill: "Cell lấp chỗ trống trong hàng",
+    tapvpwrvgnd: "Tap nối well và đế vào nguồn", dfrtp: "Flip-flop D, reset mức thấp",
+    dfxtp: "Flip-flop D", dfstp: "Flip-flop D, set mức thấp", dfrbp: "Flip-flop D có reset và ngõ ra đảo",
+    clkbuf: "Buffer của cây clock", buf: "Buffer", dlygate4sd3: "Buffer trễ, chèn để sửa hold",
+    diode: "Diode chống antenna", inv: "Cổng NOT", mux2: "Mux 2:1", mux2i: "Mux 2:1 ngõ ra đảo",
+    xor2: "XOR 2 ngõ vào", xnor2: "XNOR 2 ngõ vào", xor3: "XOR 3 ngõ vào", conb: "Hằng số 0/1",
+  };
+  if (fixed[b]) return fixed[b];
+  let m = b.match(/^(nand|nor|and|or)(\d)(b?)$/);
+  if (m) return `${m[1].toUpperCase()} ${m[2]} ngõ vào${m[3] ? ", một ngõ vào đảo" : ""}`;
+  m = b.match(/^([ao])(\d+)(b*)([ao])(i?)$/);
+  if (m) {
+    const n1 = m[1] === "a" ? "AND" : "OR", n2 = m[4] === "a" ? "AND" : "OR";
+    return `${n1}-${n2}${m[5] ? "-INVERT" : ""} (${m[2].split("").join("-")})${m[3] ? ", có ngõ vào đảo" : ""}`;
+  }
+  if (/^[ao]\d/.test(b)) return "Cổng logic phức (AND/OR kết hợp)";
+  return "Cell chuẩn";
+}
+const CATS = [
+  { k: "filler", name: "Fill, decap, tap", col: "#596173", test: b => /^(decap|fill|tapvpwrvgnd)/.test(b) },
+  { k: "ff", name: "Flip-flop", col: "#ffd84d", test: b => /^(df|dl[xr])/.test(b) },
+  { k: "clk", name: "Buffer clock", col: "#6ea6ff", test: b => /^clkbuf/.test(b) },
+  { k: "buf", name: "Buffer, trễ", col: "#8fd3c5", test: b => /^(buf|dlygate|clkdlybuf)/.test(b) },
+  { k: "diode", name: "Diode antenna", col: "#ff8d6a", test: b => /^diode/.test(b) },
+  { k: "logic", name: "Cổng logic", col: "#c6a6ff", test: () => true },
+];
+const catOf = name => CATS.find(c => c.test(base(name)));
+
+// ---- geometry: polygon -> prism ------------------------------------------------------------
+function cleanPoly(p) {
+  let q = [];
+  for (const v of p) { const l = q[q.length - 1]; if (!l || l[0] !== v[0] || l[1] !== v[1]) q.push(v); }
+  if (q.length > 1 && q[0][0] === q[q.length - 1][0] && q[0][1] === q[q.length - 1][1]) q.pop();
+  let changed = true;
+  while (changed && q.length > 3) {
+    changed = false;
+    for (let i = 0; i < q.length; i++) {
+      const a = q[(i + q.length - 1) % q.length], b = q[i], c = q[(i + 1) % q.length];
+      if (Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) < 1e-12) { q.splice(i, 1); changed = true; break; }
+    }
+  }
+  return q;
+}
+const area2 = p => { let s = 0; for (let i = 0; i < p.length; i++) { const a = p[i], b = p[(i + 1) % p.length]; s += a[0] * b[1] - b[0] * a[1]; } return s; };
+const cross3 = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+function inTri(p, a, b, c) {
+  const d1 = cross3(a, b, p), d2 = cross3(b, c, p), d3 = cross3(c, a, p);
+  return d1 > 1e-12 && d2 > 1e-12 && d3 > 1e-12;
+}
+function triangulate(p) {                 // ear clipping, p counter-clockwise, no holes
+  if (p.length === 3) return [0, 1, 2];
+  if (p.length === 4) {
+    const r = cross3(p[0], p[1], p[2]) > 0 && cross3(p[0], p[2], p[3]) > 0 && !inTri(p[3], p[0], p[1], p[2]) && !inTri(p[1], p[0], p[2], p[3]);
+    if (r) return [0, 1, 2, 0, 2, 3];
+  }
+  const idx = p.map((_, i) => i), out = [];
+  let guard = 0;
+  while (idx.length > 3 && guard++ < 5000) {
+    let cut = false;
+    for (let i = 0; i < idx.length; i++) {
+      const ia = idx[(i + idx.length - 1) % idx.length], ib = idx[i], ic = idx[(i + 1) % idx.length];
+      const a = p[ia], b = p[ib], c = p[ic];
+      if (cross3(a, b, c) <= 1e-12) continue;
+      let blocked = false;
+      for (const j of idx) {
+        if (j === ia || j === ib || j === ic) continue;
+        const q = p[j];
+        if ((q[0] === a[0] && q[1] === a[1]) || (q[0] === b[0] && q[1] === b[1]) || (q[0] === c[0] && q[1] === c[1])) continue;
+        if (inTri(q, a, b, c)) { blocked = true; break; }
+      }
+      if (blocked) continue;
+      out.push(ia, ib, ic); idx.splice(i, 1); cut = true; break;
+    }
+    if (!cut) break;
+  }
+  if (idx.length === 3) out.push(idx[0], idx[1], idx[2]);
+  return out;
+}
+function addPrism(pos, lay, pts, L) {
+  let p = cleanPoly(pts);
+  if (p.length < 3) return;
+  if (area2(p) < 0) p.reverse();
+  const t = triangulate(p);
+  const v = (q, h) => { pos.push(q[0], q[1], h); lay.push(L); };
+  for (let i = 0; i < t.length; i += 3) {
+    const a = p[t[i]], b = p[t[i + 1]], c = p[t[i + 2]];
+    v(a, 1); v(b, 1); v(c, 1); v(a, 0); v(c, 0); v(b, 0);
+  }
+  for (let i = 0; i < p.length; i++) {
+    const a = p[i], b = p[(i + 1) % p.length];
+    v(a, 0); v(b, 0); v(b, 1); v(a, 0); v(b, 1); v(a, 1);
+  }
+}
+
+// ---- WebGL2 setup ----------------------------------------------------------------------------
+const canvas = document.getElementById("stage");
+const gl = canvas.getContext("webgl2", { antialias: true });
+if (!gl) {
+  const d = document.createElement("div"); d.className = "err";
+  d.textContent = "Trình duyệt này không mở được WebGL2, nên không vẽ được layout 3D. Thử Chrome, Edge, Firefox hoặc Safari bản mới.";
+  document.body.appendChild(d); return;
+}
+const VS = `#version 300 es
+layout(location=0) in vec3 aPos;
+layout(location=1) in float aLayer;
+layout(location=2) in vec4 aM;
+layout(location=3) in vec2 aT;
+layout(location=4) in float aId;
+layout(location=5) in float aLayerI;
+layout(location=6) in float aNet;
+uniform mat4 uVP;
+uniform highp sampler2D uAct;
+uniform int uSig;
+uniform float uZ0[${NL}];
+uniform float uTh[${NL}];
+uniform float uVis[${NL}];
+uniform vec3 uCol[${NL}];
+uniform int uTop;
+uniform float uTopGeom;
+out vec3 vW; out vec3 vCol; flat out float vId;
+flat out vec4 vAct; flat out float vNet;
+void main() {
+  vNet = aNet; vAct = vec4(0.0, 0.0, 0.0, 0.0);
+  if (uSig == 1 && aNet > -0.5) vAct = texelFetch(uAct, ivec2(int(aNet + 0.5), 0), 0);
+  int L = int((uTop == 1 ? aLayerI : aLayer) + 0.5);
+  float vis = uVis[L];
+  if (uTop == 1 && uTopGeom < 0.5 && L != 0) vis = 0.0;
+  vec2 p = vec2(aM.x * aPos.x + aM.y * aPos.y, aM.z * aPos.x + aM.w * aPos.y) + aT;
+  vec3 w = vec3(p.x, uZ0[L] + aPos.z * uTh[L], -p.y);
+  vW = w; vCol = uCol[L]; vId = aId;
+  gl_Position = vis > 0.5 ? uVP * vec4(w, 1.0) : vec4(2.0, 2.0, 2.0, 1.0);
+}`;
+const FS = `#version 300 es
+precision highp float;
+precision highp int;
+in vec3 vW; in vec3 vCol; flat in float vId;
+flat in vec4 vAct; flat in float vNet;
+uniform int uSig; uniform int uHeat; uniform float uSelNet; uniform int uTop;
+uniform int uPick; uniform vec3 uEye; uniform float uSelId; uniform float uHiType; uniform vec3 uSec;
+out vec4 o;
+void main() {
+  if (uSec.x > 0.5 && (vW.x < uSec.y || vW.x > uSec.z)) discard;
+  if (uPick == 1) {
+    float r = mod(vId, 256.0), g = mod(floor(vId / 256.0), 256.0), b = floor(vId / 65536.0);
+    o = vec4(r / 255.0, g / 255.0, b / 255.0, 1.0); return;
+  }
+  vec3 n = normalize(cross(dFdx(vW), dFdy(vW)));
+  if (dot(n, uEye - vW) < 0.0) n = -n;
+  vec3 l1 = normalize(vec3(-0.45, 0.85, 0.35)), l2 = normalize(vec3(0.6, 0.35, -0.7));
+  float sh = 0.34 + 0.56 * max(dot(n, l1), 0.0) + 0.22 * max(dot(n, l2), 0.0);
+  vec3 c = vCol * sh;
+  if (uSig == 1) {
+    bool has = vNet > -0.5;
+    if (!has) c *= 0.30;
+    else if (uHeat == 1) {
+      float h = vAct.b;
+      vec3 hc = h < 0.5 ? mix(vec3(0.12, 0.18, 0.46), vec3(0.16, 0.78, 0.96), h * 2.0)
+                        : mix(vec3(0.16, 0.78, 0.96), vec3(1.0, 0.93, 0.40), (h - 0.5) * 2.0);
+      c = mix(c * 0.25, hc * (0.65 + 0.35 * sh), 0.9);
+    } else {
+      c *= 0.30 + 0.25 * vAct.g;
+      vec3 gc = vAct.a > 0.5 ? vec3(0.30, 0.95, 1.0) : vec3(1.0, 0.72, 0.22);
+      c += gc * vAct.r * (uTop == 1 ? 1.3 : 0.75);
+    }
+    if (has && uSelNet > -0.5 && abs(vNet - uSelNet) < 0.5) c = mix(c, vec3(1.0, 1.0, 0.96), 0.6);
+  }
+  vec3 hi = vec3(1.0, 0.85, 0.30);
+  if (uHiType > 0.5) c = mix(c, hi * sh, 0.38);
+  if (vId > 0.5 && abs(vId - uSelId) < 0.5) c = mix(c, hi * (0.55 + 0.45 * sh), 0.75);
+  o = vec4(c, 1.0);
+}`;
+function sh(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+const U = {};
+for (const n of ["uVP", "uZ0", "uTh", "uVis", "uCol", "uTop", "uTopGeom", "uPick", "uEye", "uSelId", "uHiType", "uSec", "uAct", "uSig", "uHeat", "uSelNet"]) U[n] = gl.getUniformLocation(prog, n);
+
+function vbo(data) { const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW); return b; }
+function attr(loc, buf, size, stride, offset, divisor) {
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, size, gl.FLOAT, false, stride, offset); gl.vertexAttribDivisor(loc, divisor);
+}
+
+// ---- simulation data (gate-level, rebuilt from the routed DEF) ----------------------------------
+const SIG = JSON.parse(document.getElementById("sig-data").textContent);
+function b64(s, T) { const bin = atob(s), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return new T(u8.buffer); }
+const NN = SIG.nets.length, SP = SIG.period, SEND = SIG.ncyc * SP;
+const togOff = b64(SIG.off, Uint32Array), togT = b64(SIG.t, Uint16Array);
+const instNetArr = b64(SIG.instNet, Int16Array);
+const topNetArr = [];
+const netInit = Uint8Array.from(SIG.init, ch => ch === "1" ? 1 : 0);
+let maxTog = 1;
+for (let i = 0; i < NN; i++) maxTog = Math.max(maxTog, togOff[i + 1] - togOff[i]);
+
+// ---- build masters (std cells) ------------------------------------------------------------
+const masters = [], placements = [], layerShapes = new Array(NL).fill(0);
+let nextId = 1;
+DATA.masters.forEach((m, mi) => {
+  const pos = [], lay = [];
+  for (const [k, polys] of Object.entries(m.polys)) {
+    const L = LIDX[k]; if (L === undefined) continue;
+    for (const f of polys) {
+      const pts = []; for (let i = 0; i < f.length; i += 2) pts.push([f[i] * S, f[i + 1] * S]);
+      addPrism(pos, lay, pts, L);
+    }
+  }
+  const nInst = m.inst.length / 6;
+  for (const [k, polys] of Object.entries(m.polys)) if (LIDX[k] !== undefined) layerShapes[LIDX[k]] += polys.length * nInst;
+  const inst = new Float32Array(nInst * 8);
+  const firstId = nextId;
+  for (let i = 0; i < nInst; i++) {
+    const o = i * 6;
+    inst.set([m.inst[o], m.inst[o + 1], m.inst[o + 2], m.inst[o + 3], m.inst[o + 4] * S, m.inst[o + 5] * S, nextId, instNetArr[nextId - 1]], i * 8);
+    placements.push({ m: mi, i }); nextId++;
+  }
+  const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+  const nVert = pos.length / 3;
+  if (nVert) {
+    const vb = vbo(new Float32Array(pos)), lb = vbo(new Float32Array(lay)), ib = vbo(inst);
+    attr(0, vb, 3, 12, 0, 0); attr(1, lb, 1, 4, 0, 0);
+    attr(2, ib, 4, 32, 0, 1); attr(3, ib, 2, 32, 16, 1); attr(4, ib, 1, 32, 24, 1); attr(6, ib, 1, 32, 28, 1);
+  }
+  gl.bindVertexArray(null);
+  const cat = catOf(m.name);
+  masters.push({ idx: mi, name: m.name, nInst, nVert, vao, filler: cat.k === "filler", cat, firstId,
+    bbox: m.bbox.map(v => v * S), inst: m.inst });
+});
+const nPlacements = placements.length;
+
+// ---- top cell rectangles (routing, vias, power grid) + substrate ------------------------------
+const topRects = [];                       // [layer, x0, y0, x1, y1] in um
+const bnd = DATA.boundary.map(v => v * S);
+const topLayerOrder = Object.keys(DATA.top);
+for (const k of topLayerOrder) {
+  const L = LIDX[k]; if (L === undefined) continue;
+  const bin = atob(DATA.top[k]); const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const a = new Int32Array(u8.buffer);
+  for (let i = 0; i < a.length; i += 4) topRects.push([L, a[i] * S, a[i + 1] * S, a[i + 2] * S, a[i + 3] * S]);
+  const tn = SIG.topNet[k] ? b64(SIG.topNet[k], Int16Array) : new Int16Array(a.length / 4).fill(-1);
+  for (let i = 0; i < tn.length; i++) topNetArr.push(tn[i]);
+  layerShapes[L] += a.length / 4;
+}
+const topInst = new Float32Array((topRects.length + 1) * 9);
+const pad = 1.2;
+topInst.set([bnd[2] - bnd[0] + 2 * pad, 0, 0, bnd[3] - bnd[1] + 2 * pad, bnd[0] - pad, bnd[1] - pad, 0, LIDX.substrate, -1], 0);
+layerShapes[LIDX.substrate] = 1;
+topRects.forEach((r, i) => {
+  topInst.set([r[3] - r[1], 0, 0, r[4] - r[2], r[1], r[2], nPlacements + 1 + i, r[0], topNetArr[i]], (i + 1) * 9);
+});
+const unitPos = [], unitLay = [];
+addPrism(unitPos, unitLay, [[0, 0], [1, 0], [1, 1], [0, 1]], 0);
+const topVao = gl.createVertexArray(); gl.bindVertexArray(topVao);
+{
+  const vb = vbo(new Float32Array(unitPos)), ib = vbo(topInst);
+  attr(0, vb, 3, 12, 0, 0);
+  attr(2, ib, 4, 36, 0, 1); attr(3, ib, 2, 36, 16, 1); attr(4, ib, 1, 36, 24, 1); attr(5, ib, 1, 36, 28, 1); attr(6, ib, 1, 36, 32, 1);
+}
+gl.bindVertexArray(null);
+const nTop = topRects.length + 1;
+
+// ---- state -----------------------------------------------------------------------------------
+const st = {
+  fill: true, top: true, spin: false, sep: 3, thick: 2, play: false, sec: false, secRun: true, secPos: 0.5, secW: 8,
+  vis: LAYERS.map(() => 1), selId: -1, hiType: -1, isolate: -1,
+  sig: false, topdown: true, heat: false, simPlay: true, simT: 2 * SP, speed: 0, selNet: -1,
+};
+const NTEX = Math.max(1024, NN);
+const act = new Float32Array(NTEX * 4);
+const actTex = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, actTex);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, NTEX, 1, 0, gl.RGBA, gl.FLOAT, act);
+const TAU = 6;                              // glow decay, in simulation time units (period = SP)
+function togglesUpTo(i, T) {               // number of toggles of net i at or before T
+  let lo = togOff[i], hi = togOff[i + 1];
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (togT[mid] <= T) lo = mid + 1; else hi = mid; }
+  return lo - togOff[i];
+}
+function levelAt(i, T) { return netInit[i] ^ (togglesUpTo(i, T) & 1); }
+function updateAct(T) {
+  for (let i = 0; i < NN; i++) {
+    const k = togglesUpTo(i, T), lvl = netInit[i] ^ (k & 1);
+    let g = 0;
+    if (k > 0) { const tl = togT[togOff[i] + k - 1]; g = Math.exp(-(T - tl) / TAU); }
+    act[i * 4] = g; act[i * 4 + 1] = lvl;
+    act[i * 4 + 2] = Math.log(1 + togOff[i + 1] - togOff[i]) / Math.log(1 + maxTog);
+    act[i * 4 + 3] = lvl;
+  }
+  gl.bindTexture(gl.TEXTURE_2D, actTex);
+  gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, NTEX, 1, gl.RGBA, gl.FLOAT, act);
+}
+updateAct(st.simT);
+const W = bnd[2] - bnd[0], H = bnd[3] - bnd[1], SIZE = Math.max(W, H);
+const cam = { th: 2.25, ph: 0.98, r: SIZE * 1.75, tgt: [bnd[0] + W / 2, 0, -(bnd[1] + H / 2)] };
+function stackMid() { return (6.63 * st.thick + 15 * st.sep) * 0.4; }
+function resetView() { cam.th = 2.25; cam.ph = 0.98; cam.r = SIZE * 1.75; cam.tgt = [bnd[0] + W / 2, stackMid(), -(bnd[1] + H / 2)]; dirty(); }
+cam.tgt[1] = stackMid();
+
+// ---- matrices ----------------------------------------------------------------------------------
+function persp(fy, asp, n, f) { const t = 1 / Math.tan(fy / 2), nf_ = 1 / (n - f); return [t / asp, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) * nf_, -1, 0, 0, 2 * f * n * nf_, 0]; }
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const crs = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const nrm = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+function lookAt(e, c, up) {
+  const z = nrm(sub(e, c)), x = nrm(crs(up, z)), y = crs(z, x);
+  return [x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x, e), -dot(y, e), -dot(z, e), 1];
+}
+function mul(a, b) { const o = new Array(16); for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) { let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k]; o[c * 4 + r] = s; } return o; }
+const FOV = 40 * Math.PI / 180;
+function eye() { const s = Math.sin(cam.ph); return [cam.tgt[0] + cam.r * s * Math.cos(cam.th), cam.tgt[1] + cam.r * Math.cos(cam.ph), cam.tgt[2] + cam.r * s * Math.sin(cam.th)]; }
+
+// ---- render ----------------------------------------------------------------------------------
+let pickFbo = null, pickW = 0, pickH = 0, needs = true;
+const dirty = () => { needs = true; };
+function sizeCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.max(1, Math.round(canvas.clientWidth * dpr)), h = Math.max(1, Math.round(canvas.clientHeight * dpr));
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; dirty(); }
+}
+function ensurePick() {
+  if (pickFbo && pickW === canvas.width && pickH === canvas.height) return;
+  if (pickFbo) { gl.deleteFramebuffer(pickFbo.f); gl.deleteRenderbuffer(pickFbo.c); gl.deleteRenderbuffer(pickFbo.d); }
+  const f = gl.createFramebuffer(), c = gl.createRenderbuffer(), d = gl.createRenderbuffer();
+  gl.bindRenderbuffer(gl.RENDERBUFFER, c); gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA8, canvas.width, canvas.height);
+  gl.bindRenderbuffer(gl.RENDERBUFFER, d); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, canvas.width, canvas.height);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, c);
+  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, d);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  pickFbo = { f, c, d }; pickW = canvas.width; pickH = canvas.height;
+}
+const BG = hex3("#0c0e12");
+const panelEl = document.getElementById("panel");
+function viewShift() {
+  if (window.innerWidth <= 760 || document.querySelector(".hud").classList.contains("bare")) return 0;
+  return -(panelEl.getBoundingClientRect().width + 14) / Math.max(1, canvas.clientWidth);
+}
+function viewShiftY() {             // centre the die between the title and the timeline
+  const top = document.querySelector(".ctl").getBoundingClientRect().bottom;
+  const tlEl = document.getElementById("tl");
+  const bare = document.querySelector(".hud").classList.contains("bare");
+  const bot = tlEl.hidden || bare ? canvas.clientHeight : tlEl.getBoundingClientRect().top;
+  const h = Math.max(1, canvas.clientHeight);
+  return -(((top + bot) / 2) - h / 2) * 2 / h;
+}
+const colArr = new Float32Array(LAYERS.flatMap(l => hex3(l.col)));
+function draw(pick) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, pick ? pickFbo.f : null);
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  if (pick) gl.clearColor(0, 0, 0, 1); else gl.clearColor(BG[0], BG[1], BG[2], 1);
+  gl.enable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE); gl.disable(gl.BLEND);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.useProgram(prog);
+  let e, V, P;
+  const asp = canvas.width / canvas.height;
+  if (st.sig && st.topdown) {
+    e = [cam.tgt[0], cam.tgt[1] + cam.r, cam.tgt[2]];
+    V = lookAt(e, cam.tgt, [0, 0, -1]);
+    const hh = cam.r * Math.tan(FOV / 2), n_ = 0.1, f_ = cam.r * 4 + 200;
+    P = [1 / (hh * asp), 0, 0, 0, 0, 1 / hh, 0, 0, 0, 0, -2 / (f_ - n_), 0, 0, 0, -(f_ + n_) / (f_ - n_), 1];
+    P[12] += viewShift();
+    P[13] += viewShiftY();
+  } else {
+    e = eye();
+    V = lookAt(e, cam.tgt, [0, 1, 0]);
+    const near = Math.max(cam.r * 0.01, 0.05), far = cam.r * 6 + SIZE * 3;
+    P = persp(FOV, asp, near, far);
+    P[8] -= viewShift();                // keep the die centred in the part of the stage the panel does not cover
+  }
+  gl.uniformMatrix4fv(U.uVP, false, new Float32Array(mul(P, V)));
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, actTex); gl.uniform1i(U.uAct, 0);
+  gl.uniform1i(U.uSig, st.sig ? 1 : 0); gl.uniform1i(U.uHeat, st.heat ? 1 : 0); gl.uniform1f(U.uSelNet, st.selNet);
+  gl.uniform3fv(U.uEye, e);
+  gl.uniform1fv(U.uZ0, new Float32Array(LAYERS.map(l => l.z0 * st.thick + l.rank * st.sep)));
+  gl.uniform1fv(U.uTh, new Float32Array(LAYERS.map(l => (l.z1 - l.z0) * st.thick)));
+  gl.uniform1fv(U.uVis, new Float32Array(st.vis));
+  gl.uniform3fv(U.uCol, colArr);
+  gl.uniform1i(U.uPick, pick ? 1 : 0);
+  gl.uniform1f(U.uSelId, st.selId);
+  const secC = bnd[0] + st.secPos * W;
+  gl.uniform3f(U.uSec, st.sec ? 1 : 0, secC - st.secW / 2, secC + st.secW / 2);
+  gl.uniform1i(U.uTop, 0);
+  gl.disableVertexAttribArray(5); gl.vertexAttrib1f(5, 0);
+  for (const m of masters) {
+    if (!m.nVert) continue;
+    if (st.isolate >= 0 ? m.idx !== st.isolate : (!st.fill && m.filler)) continue;
+    gl.uniform1f(U.uHiType, !pick && m.idx === st.hiType ? 1 : 0);
+    gl.bindVertexArray(m.vao);
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, m.nVert, m.nInst);
+  }
+  gl.uniform1i(U.uTop, 1); gl.uniform1f(U.uHiType, 0);
+  gl.uniform1f(U.uTopGeom, st.top && st.isolate < 0 ? 1 : 0);
+  gl.bindVertexArray(topVao);
+  gl.vertexAttrib1f(1, 0);
+  gl.drawArraysInstanced(gl.TRIANGLES, 0, unitPos.length / 3, nTop);
+  gl.bindVertexArray(null);
+}
+let last = performance.now(), interacting = false, playT = 0, secT = 3.5, scrubbing = false, actT = -1;
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+function frame(t) {
+  const dt = Math.min(0.05, (t - last) / 1000); last = t;
+  sizeCanvas();
+  if (st.play && !interacting) {
+    // one loop of 18 s: stacked, layers lift apart, hold, settle back, while the camera circles
+    playT += dt;
+    const u = playT % 18, ease = x => (1 - Math.cos(Math.PI * Math.min(1, Math.max(0, x)))) / 2;
+    const k = u < 2 ? 0 : u < 7 ? ease((u - 2) / 5) : u < 11 ? 1 : u < 16 ? 1 - ease((u - 11) / 5) : 0;
+    st.sep = 9 * k; st.thick = 2.5;
+    cam.th += dt * 0.3; cam.ph = 1.0 + 0.32 * k; cam.tgt[1] = stackMid();
+    optSep.value = st.sep; optThick.value = st.thick; syncOut(); needs = true;
+  } else if (st.spin && !interacting && !reduceMotion.matches) { cam.th += dt * 0.25; needs = true; }
+  if (st.sig) {
+    if (st.simPlay && !scrubbing) {
+      st.simT += dt * 24 * Math.pow(2, st.speed);
+      if (st.simT >= SEND) st.simT = 2 * SP;
+    }
+    if (st.simT !== actT) { updateAct(st.simT); actT = st.simT; syncSim(); needs = true; }
+  }
+  if (st.sec && st.secRun && !interacting) {
+    secT += dt; st.secPos = 0.5 - 0.5 * Math.cos(secT * Math.PI * 2 / 14);
+    optSecPos.value = st.secPos; syncSec(); needs = true;
+  }
+  if (needs) { draw(false); needs = false; }
+  requestAnimationFrame(frame);
+}
+
+// ---- picking -----------------------------------------------------------------------------------
+function pickAt(cx, cy) {
+  ensurePick();
+  draw(true);
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((cx - rect.left) / rect.width * canvas.width);
+  const y = Math.floor((1 - (cy - rect.top) / rect.height) * canvas.height);
+  const px = new Uint8Array(4);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, pickFbo.f);
+  gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  dirty();
+  return px[0] + px[1] * 256 + px[2] * 65536;
+}
+
+// ---- UI ----------------------------------------------------------------------------------------
+const $ = id => document.getElementById(id);
+$("dims").textContent = `${nf(W, 2)} × ${nf(H, 2)} µm · ${nf(nPlacements)} cell · ${nf(topRects.length)} hình chữ nhật dây và via`;
+$("src").textContent = `Dựng từ ${DATA.name}.gds (kết quả cuối của OpenLane): ${masters.length} loại cell chuẩn sky130_fd_sc_hd.`;
+
+const layersEl = $("layers");
+const layerRows = [];
+[...LAYERS.keys()].reverse().forEach(i => {
+  const l = LAYERS[i];
+  const row = document.createElement("label"); row.className = "layer";
+  const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = true; cb.id = "layer-" + l.k;
+  cb.addEventListener("change", () => { st.vis[i] = cb.checked ? 1 : 0; row.classList.toggle("off", !cb.checked); dirty(); });
+  const sw = document.createElement("span"); sw.className = "sw"; sw.style.background = l.col;
+  const ln = document.createElement("span"); ln.className = "ln"; ln.textContent = l.k;
+  const lz = document.createElement("span"); lz.className = "lz";
+  lz.textContent = (l.approx ? "≈ " : "") + `${nf(l.z0, l.approx ? 2 : 3)}…${nf(l.z1, l.approx ? 2 : 3)} µm`;
+  const lc = document.createElement("span"); lc.className = "lc"; lc.textContent = nf(layerShapes[i]);
+  lc.title = "số hình trong khối";
+  row.append(cb, sw, ln, lz, lc); layersEl.appendChild(row);
+  layerRows[i] = { row, cb };
+});
+function setLayers(pred) {
+  LAYERS.forEach((l, i) => { const on = pred(l.k); st.vis[i] = on ? 1 : 0; layerRows[i].cb.checked = on; layerRows[i].row.classList.toggle("off", !on); });
+  dirty();
+}
+$("allLayers").onclick = () => setLayers(() => true);
+$("metalOnly").onclick = () => setLayers(k => METALS.includes(k));
+$("feolOnly").onclick = () => setLayers(k => FEOL.includes(k));
+
+// composition
+const catCount = CATS.map(c => masters.filter(m => m.cat === c).reduce((s, m) => s + m.nInst, 0));
+const stackEl = $("stack"), legendEl = $("legend");
+stackEl.setAttribute("aria-label", CATS.map((c, i) => `${c.name} ${catCount[i]}`).join(", "));
+CATS.forEach((c, i) => {
+  if (!catCount[i]) return;
+  const s = document.createElement("span"); s.style.width = (catCount[i] / nPlacements * 100) + "%"; s.style.background = c.col;
+  stackEl.appendChild(s);
+  const d = document.createElement("div"); d.innerHTML = `<i style="background:${c.col}"></i><span></span><b>${nf(catCount[i])}</b>`;
+  d.querySelector("span").textContent = c.name; legendEl.appendChild(d);
+});
+const mlist = $("mlist"), mrows = [];
+const maxInst = Math.max(...masters.map(m => m.nInst));
+[...masters].sort((a, b) => b.nInst - a.nInst).forEach(m => {
+  const r = document.createElement("div"); r.className = "mrow"; r.tabIndex = 0; r.setAttribute("role", "button");
+  r.innerHTML = `<span class="mn"></span><span class="mc">${nf(m.nInst)}</span><span class="mf"></span><span class="mb"><span></span></span>`;
+  r.querySelector(".mn").textContent = short(m.name);
+  r.querySelector(".mf").textContent = cellFunction(m.name);
+  const bar = r.querySelector(".mb span"); bar.style.width = (m.nInst / maxInst * 100) + "%"; bar.style.background = m.cat.col;
+  const go = () => selectType(m.idx);
+  r.addEventListener("click", go);
+  r.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); } });
+  mlist.appendChild(r); mrows[m.idx] = r;
+});
+
+const ORIENT = (a, b, c, d) => (a === 1 && d === 1 ? "N" : a === 1 && d === -1 ? "FS" : a === -1 && d === -1 ? "S" : a === -1 && d === 1 ? "FN" : `${a},${b},${c},${d}`);
+function syncCard() { $("card").hidden = st.sig && $("sel").hidden; }
+function showSel(kind, name, desc, meta, canIsolate) {
+  $("hint").hidden = true; $("sel").hidden = false; syncCard();
+  $("selKind").textContent = kind; $("selName").textContent = name; $("selDesc").textContent = desc; $("selMeta").textContent = meta;
+  $("isoBtn").hidden = !canIsolate;
+  $("isoBtn").textContent = st.isolate >= 0 ? "Hiện lại tất cả" : "Chỉ hiện loại này";
+}
+function markRows() { mrows.forEach((r, i) => r && r.classList.toggle("on", i === st.hiType)); }
+function typeMeta(m) {
+  const w = m.bbox[2] - m.bbox[0], h = m.bbox[3] - m.bbox[1];
+  return `${nf(m.nInst)} cái trong khối · ô ${nf(w, 2)} × ${nf(h, 2)} µm${drive(m.name) ? " · cỡ " + drive(m.name) : ""}`;
+}
+function selectType(mi) {
+  const m = masters[mi];
+  st.hiType = mi; st.selId = -1;
+  if (st.isolate >= 0 && st.isolate !== mi) st.isolate = mi;
+  showSel("Loại cell", m.name, cellFunction(m.name), typeMeta(m), true);
+  markRows(); dirty();
+}
+function selectId(id) {
+  if (id <= 0) { clearSel(); return; }
+  if (id <= nPlacements) {
+    const p = placements[id - 1], m = masters[p.m], o = p.i * 6;
+    const a = m.inst[o], b = m.inst[o + 1], c = m.inst[o + 2], d = m.inst[o + 3];
+    st.selId = id; st.hiType = p.m;
+    const on = instNetArr[id - 1];
+    st.selNet = on;
+    showSel("Cell", m.name, cellFunction(m.name),
+      `gốc (${nf(m.inst[o + 4] * S, 2)}; ${nf(m.inst[o + 5] * S, 2)}) µm · hướng ${ORIENT(a, b, c, d)}\n${typeMeta(m)}` +
+      (on >= 0 ? `\nngõ ra lái net ${SIG.nets[on]} · ${netMeta(on)}` : ""), true);
+    $("selMeta").style.whiteSpace = "pre-line";
+  } else {
+    const r = topRects[id - nPlacements - 1];
+    if (!r) { clearSel(); return; }
+    const k = LAYERS[r[0]].k, w = r[3] - r[1], h = r[4] - r[2];
+    const isVia = /con|via/.test(k);
+    const net = topNetArr[id - nPlacements - 1];
+    st.selId = id; st.hiType = -1; st.selNet = net;
+    const geo = `${k} · ${nf(Math.max(w, h), 2)} × ${nf(Math.min(w, h), 2)} µm · từ (${nf(r[1], 2)}; ${nf(r[2], 2)}) đến (${nf(r[3], 2)}; ${nf(r[4], 2)})`;
+    if (net >= 0) {
+      const drv = SIG.driver[net];
+      showSel(isVia ? "Via của net" : "Dây của net", SIG.nets[net],
+        drv ? `Do ${short(drv.split(" ")[1])} (${drv.split(" ")[0]}) lái` : "Chân vào của khối PE",
+        `${netMeta(net)}\n${geo}`, false);
+    } else {
+      showSel(isVia ? "Via mức top" : "Dây mức top", k, "Lưới nguồn VPWR/VGND (không đổi trạng thái)", geo, false);
+    }
+    $("selMeta").style.whiteSpace = "pre-line";
+  }
+  markRows(); dirty();
+}
+function netMeta(n) {
+  const cnt = togOff[n + 1] - togOff[n];
+  return `${nf(cnt)} lần đổi trong ${SIG.ncyc} chu kỳ` + (st.sig ? ` · đang ở mức ${levelAt(n, st.simT)}` : "");
+}
+function clearSel() {
+  st.selId = -1; st.hiType = -1; st.selNet = -1;
+  $("sel").hidden = true; $("hint").hidden = false; syncCard(); markRows(); dirty();
+}
+function toggleIsolate() {
+  if (st.isolate >= 0) st.isolate = -1; else if (st.hiType >= 0) st.isolate = st.hiType; else return;
+  $("isoBtn").textContent = st.isolate >= 0 ? "Hiện lại tất cả" : "Chỉ hiện loại này";
+  dirty();
+}
+$("isoBtn").onclick = toggleIsolate;
+$("clearBtn").onclick = () => { st.isolate = -1; clearSel(); };
+$("resetBtn").onclick = resetView;
+
+const optFill = $("optFill"), optTop = $("optTop"), optSpin = $("optSpin"), optSep = $("optSep"), optThick = $("optThick");
+const syncOut = () => { $("sepOut").textContent = nf(st.sep, 1) + " µm"; $("thickOut").textContent = "×" + nf(st.thick, 1); };
+optFill.onchange = () => { st.fill = optFill.checked; dirty(); };
+optTop.onchange = () => { st.top = optTop.checked; dirty(); };
+optSpin.onchange = () => { st.spin = optSpin.checked; dirty(); };
+optSep.oninput = () => { if (st.play) setPlay(false); st.sep = +optSep.value; cam.tgt[1] = stackMid(); syncOut(); dirty(); };
+optThick.oninput = () => { if (st.play) setPlay(false); st.thick = +optThick.value; cam.tgt[1] = stackMid(); syncOut(); dirty(); };
+syncOut();
+const optSec = $("optSec"), optSecRun = $("optSecRun"), optSecPos = $("optSecPos"), optSecW = $("optSecW");
+const syncSec = () => { $("secPosOut").textContent = `x = ${nf(bnd[0] + st.secPos * W, 1)} µm`; $("secWOut").textContent = nf(st.secW, 1) + " µm"; };
+optSec.onchange = () => { st.sec = optSec.checked; secT = Math.acos(1 - 2 * st.secPos) / (Math.PI * 2 / 14); dirty(); };
+optSecRun.onchange = () => { st.secRun = optSecRun.checked; secT = Math.acos(1 - 2 * st.secPos) / (Math.PI * 2 / 14); dirty(); };
+optSecPos.oninput = () => { st.secPos = +optSecPos.value; if (st.secRun) { optSecRun.checked = false; st.secRun = false; } syncSec(); dirty(); };
+optSecW.oninput = () => { st.secW = +optSecW.value; syncSec(); dirty(); };
+syncSec();
+const playBtn = $("playBtn"), bareBtn = $("bareBtn"), hudEl = document.querySelector(".hud");
+function setPlay(on) { st.play = on; playBtn.textContent = on ? "Dừng hoạt cảnh" : "Phát hoạt cảnh"; playBtn.setAttribute("aria-pressed", String(on)); dirty(); }
+playBtn.onclick = () => setPlay(!st.play);
+function setBare(on) { hudEl.classList.toggle("bare", on); bareBtn.textContent = on ? "Hiện bảng điều khiển" : "Ẩn bảng điều khiển"; bareBtn.setAttribute("aria-pressed", String(on)); dirty(); }
+bareBtn.onclick = () => setBare(!hudEl.classList.contains("bare"));
+// signal mode
+const sigBtn = $("sigBtn"), tl = $("tl"), simBtn = $("simBtn"), simPos = $("simPos"), simSpeed = $("simSpeed");
+const optHeat = $("optHeat"), optTopdown = $("optTopdown");
+simPos.max = String(SEND - 1);
+const busW = () => { let w = 0; for (let c = 0; c <= Math.floor(st.simT / SP); c++) if (SIG.plan[c] && SIG.plan[c][1]) w = SIG.plan[c][2]; return w; };
+let lastCyc = -1;
+function syncSim(force) {
+  const c = Math.min(SIG.ncyc - 1, Math.floor(st.simT / SP));
+  if (!scrubbing) simPos.value = String(Math.floor(st.simT));
+  if (c === lastCyc && !force) return;
+  lastCyc = c;
+  const [rst, wl, wv, f, psi] = SIG.plan[c], [fo, pso] = SIG.samples[c];
+  const wReg = (() => { let w = 0; for (let k = 0; k < c; k++) if (SIG.plan[k][1]) w = SIG.plan[k][2]; return w; })();
+  const phase = !rst ? "reset" : wl ? `nạp weight ${nf(wv)}` : "nhân và cộng dồn";
+  $("simCyc").textContent = `chu kỳ ${c + 1}/${SIG.ncyc}`;
+  $("simVals").innerHTML = `<span class="ph"></span> · weight đang giữ <b>${nf(wReg)}</b><br>` +
+    `vào: feature <b>${nf(f)}</b>, psum <b>${nf(psi)}</b> &nbsp;→&nbsp; ra: feature <b>${nf(fo)}</b>, psum <b>${nf(pso)}</b>`;
+  $("simVals").querySelector(".ph").textContent = phase;
+}
+const speedTxt = () => { $("simSpeedOut").textContent = "×" + nf(Math.pow(2, st.speed), st.speed < 0 ? 2 : 0); };
+speedTxt();
+simSpeed.oninput = () => { st.speed = +simSpeed.value; speedTxt(); };
+simBtn.onclick = () => { st.simPlay = !st.simPlay; simBtn.textContent = st.simPlay ? "Dừng" : "Chạy"; };
+simPos.addEventListener("input", () => { scrubbing = true; st.simT = +simPos.value; syncSim(true); dirty(); });
+simPos.addEventListener("change", () => { scrubbing = false; });
+optHeat.onchange = () => { st.heat = optHeat.checked; dirty(); };
+optTopdown.onchange = () => { st.topdown = optTopdown.checked; dirty(); };
+let saved3d = null;
+function setSig(on) {
+  if (on === st.sig) return;
+  if (on) {
+    saved3d = { sep: st.sep, thick: st.thick, play: st.play, cam: { th: cam.th, ph: cam.ph, r: cam.r, tgt: [...cam.tgt] } };
+    setPlay(false);
+    st.sep = 0; st.thick = 1; cam.r = SIZE * 1.95; cam.tgt = [bnd[0] + W / 2, 3, -(bnd[1] + H / 2)];
+  } else if (saved3d) {
+    st.sep = saved3d.sep; st.thick = saved3d.thick; Object.assign(cam, saved3d.cam);
+    if (saved3d.play) setPlay(true);
+  }
+  st.sig = on;
+  optSep.value = st.sep; optThick.value = st.thick; syncOut();
+  tl.hidden = !on; playBtn.hidden = on;
+  sigBtn.textContent = on ? "Xem 3D" : "Tín hiệu chạy"; sigBtn.setAttribute("aria-pressed", String(on));
+  $("hint").textContent = on
+    ? "Dây sáng lên khi net của nó đổi trạng thái. Kéo để dời, cuộn hoặc chụm để phóng to, bấm vào một dây để xem tên net."
+    : "Kéo để xoay, chuột phải hoặc hai ngón để dời, cuộn hoặc chụm để phóng to. Bấm vào một cell hoặc một dây để xem nó là gì.";
+  syncCard(); syncSim(true); dirty();
+}
+sigBtn.onclick = () => setSig(!st.sig);
+$("simNote").textContent = `Tín hiệu: mô phỏng gate-level dựng lại từ DEF của khối (${SIG.nets.length} net, trễ đơn vị mỗi cổng), ` +
+  `reset rồi nạp weight 37, cho ${SIG.ncyc - 5} feature ngẫu nhiên đi qua, đổi sang weight −82 ở chu kỳ 105. ` +
+  `Kiểm lại: feature ra trễ ${SIG.latF} chu kỳ, psum ra = psum vào + weight × feature trễ ${SIG.latP} chu kỳ, ` +
+  `khớp ${SIG.check.psum}/${SIG.check.total} chu kỳ.`;
+$("sheetBtn").onclick = () => { const p = $("panel"); const open = !p.classList.contains("open"); p.classList.toggle("open", open); $("sheetBtn").setAttribute("aria-expanded", String(open)); };
+
+window.addEventListener("keydown", ev => {
+  if (ev.target.closest && ev.target.closest("input, textarea")) return;
+  const k = ev.key.toLowerCase();
+  if (k === "1") { optFill.checked = !optFill.checked; optFill.onchange(); }
+  else if (k === "2") { optTop.checked = !optTop.checked; optTop.onchange(); }
+  else if (k === "3") toggleIsolate();
+  else if (k === "a") { optSpin.checked = !optSpin.checked; optSpin.onchange(); }
+  else if (k === "r") resetView();
+  else if (k === "escape") { st.isolate = -1; clearSel(); }
+  else if (k === "p") { if (st.sig) simBtn.onclick(); else setPlay(!st.play); }
+  else if (k === "t") setSig(!st.sig);
+  else if (k === "h") setBare(!hudEl.classList.contains("bare"));
+  else if (k === "s") { optSec.checked = !optSec.checked; optSec.onchange(); }
+});
+
+// ---- orbit controls ----------------------------------------------------------------------------
+const ptrs = new Map();
+let down = null, mode = null, pinch0 = 0;
+canvas.addEventListener("contextmenu", e => e.preventDefault());
+canvas.addEventListener("pointerdown", e => {
+  canvas.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  interacting = true; canvas.classList.add("dragging");
+  if (ptrs.size === 1) { down = { x: e.clientX, y: e.clientY, t: performance.now(), moved: false }; mode = (e.button === 2 || e.shiftKey || (st.sig && st.topdown)) ? "pan" : "rot"; }
+  else if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); mode = "pinch"; if (down) down.moved = true; }
+});
+function pan(dx, dy) {
+  let x, y;
+  if (st.sig && st.topdown) { x = [1, 0, 0]; y = [0, 0, -1]; }
+  else { const e = eye(), z = nrm(sub(e, cam.tgt)); x = nrm(crs([0, 1, 0], z)); y = crs(z, x); }
+  const s = cam.r * 2 * Math.tan(FOV / 2) / canvas.clientHeight;
+  for (let i = 0; i < 3; i++) cam.tgt[i] += (-x[i] * dx + y[i] * dy) * s;
+}
+canvas.addEventListener("pointermove", e => {
+  if (!ptrs.has(e.pointerId)) return;
+  const p = ptrs.get(e.pointerId), dx = e.clientX - p.x, dy = e.clientY - p.y;
+  if (mode === "pinch" && ptrs.size === 2) {
+    const before = [...ptrs.values()]; const mx0 = (before[0].x + before[1].x) / 2, my0 = (before[0].y + before[1].y) / 2;
+    p.x = e.clientX; p.y = e.clientY;
+    const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (pinch0 > 0 && d > 0) cam.r = Math.min(SIZE * 6, Math.max(SIZE * 0.03, cam.r * pinch0 / d));
+    pinch0 = d; pan((a.x + b.x) / 2 - mx0, (a.y + b.y) / 2 - my0); dirty(); return;
+  }
+  p.x = e.clientX; p.y = e.clientY;
+  if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) down.moved = true;
+  if (mode === "rot") { cam.th += dx * 0.006; cam.ph = Math.min(3.10, Math.max(0.03, cam.ph - dy * 0.006)); dirty(); }
+  else if (mode === "pan") { pan(dx, dy); dirty(); }
+});
+function up(e) {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  if (ptrs.size === 0) {
+    if (down && !down.moved && performance.now() - down.t < 600 && e.type === "pointerup") selectId(pickAt(e.clientX, e.clientY));
+    down = null; mode = null; interacting = false; canvas.classList.remove("dragging");
+  } else if (ptrs.size === 1) { mode = st.sig && st.topdown ? "pan" : "rot"; }
+}
+canvas.addEventListener("pointerup", up);
+canvas.addEventListener("pointercancel", up);
+canvas.addEventListener("wheel", e => {
+  e.preventDefault();
+  cam.r = Math.min(SIZE * 6, Math.max(SIZE * 0.03, cam.r * Math.exp(e.deltaY * 0.0012))); dirty();
+}, { passive: false });
+
+window.__pe = { st, cam, pickAt, selectId, selectType, dirty, masters, nPlacements, topRects, setSig };
+setSig(true);
+if (reduceMotion.matches) simBtn.onclick();
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>

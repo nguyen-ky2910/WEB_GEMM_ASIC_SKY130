@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>One-Tile int4 NPU (2x2 MAC Array) for Tiny Tapeout — Khoi Nguyen</title>
+<meta name="description" content="A 2×2 int4 MAC-array accelerator with per-row clock gating and full scan, taken from RTL to a signed-off SkyWater SKY130 layout in one Tiny Tapeout tile." />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="canonical" href="https://akln0401.github.io/portfolio/projects/npu-tapeout.html" />
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon.png" />
+<meta name="theme-color" content="#f4f2ed" />
+<meta name="author" content="Khoi Nguyen" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Khoi Nguyen — Engineering Portfolio" />
+<meta property="og:title" content="One-Tile int4 NPU (2x2 MAC Array) for Tiny Tapeout — Khoi Nguyen" />
+<meta property="og:description" content="A 2×2 int4 MAC-array accelerator with per-row clock gating and full scan, taken from RTL to a signed-off SkyWater SKY130 layout in one Tiny Tapeout tile." />
+<meta property="og:url" content="https://akln0401.github.io/portfolio/projects/npu-tapeout.html" />
+<meta property="og:image" content="https://akln0401.github.io/portfolio/assets/og/npu.png?v=20261011" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:alt" content="Layout of the one-tile int4 NPU in SkyWater SKY130" />
+<meta property="og:locale" content="en_CA" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="One-Tile int4 NPU (2x2 MAC Array) for Tiny Tapeout — Khoi Nguyen" />
+<meta name="twitter:description" content="A 2×2 int4 MAC-array accelerator with per-row clock gating and full scan, taken from RTL to a signed-off SkyWater SKY130 layout in one Tiny Tapeout tile." />
+<meta name="twitter:image" content="https://akln0401.github.io/portfolio/assets/og/npu.png?v=20261011" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=Inter+Tight:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css?v=20261013c" />
+<style>
+.a7 { --a7-text: #17191c;  }
+
+.a7 h1 { margin: 6px 0 20px; font-size: clamp(2.1rem, 1.4rem + 3vw, 3.4rem); line-height: 1.04; letter-spacing: -0.025em; font-weight: 300; }
+.a7 h2 { font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.1rem); line-height: 1.15; letter-spacing: -0.015em; font-weight: 300; }
+.a7 h4 { font-size: 1.05rem; line-height: 1.3; font-weight: 600; margin: 0 0 4px; }
+.a7 .prose p, .a7 .pd-lede { line-height: 1.65; }
+.a7 .section-index { color: var(--a7-text); }
+.a7-plate { margin: 0; align-self: center; }
+.a7-plate svg, .a7-plate img { width: 100%; height: auto; display: block; }
+.a7-plate figcaption { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 6px; }
+.a7-facts { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.6; color: var(--ink); max-width: 56ch; }
+.a7-fig { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 20px 0; margin: 24px 0 8px; color: var(--ink); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.a7-fig svg { width: 100%; min-width: 640px; height: auto; display:block; }
+.a7-fig img { width: 100%; height: auto; display:block; }
+.a7-fig:focus-visible { outline: 2px solid var(--a7-text); outline-offset: 2px; }
+.a7-cap { font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.a7-photos { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 20px; }
+.a7-photos .a7-fig { border: 0; padding: 0; background: #000; }
+.a7-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 28px 32px; margin-top: 24px; }
+.a7-card p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6; }
+.a7-pnr th, .a7-pnr td { text-align: left; }
+.a7-pnr td.ok { color: #2e7d32; font-weight: 600; }
+.a7-pnr td.num, .a7-pnr th.num { text-align: right; }
+.a7-status { display:block; font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--a7-text); margin-bottom: 6px; }
+/* NPU page: code listings, 3D viewer and diagram classes */
+.a7 pre { margin: 20px 0 8px; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow-x: auto; line-height: 1.5; counter-reset: ln; font-size: 13px; }
+.a7 pre .l { display: block; min-height: 1.5em; padding-left: 3.2em; position: relative; white-space: pre; }
+.a7 pre .l::before { counter-increment: ln; content: counter(ln); position: absolute; left: 0; width: 2.2em; text-align: right; color: var(--muted); }
+.a7 pre .c { font-style: italic; color: var(--muted); }
+.a7 pre .k { font-weight: 600; }
+.a7 details { margin-top: 16px; }
+.a7 details summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+#gds3d { height: min(620px, 72vh); border: 1px solid var(--line); margin: 24px 0 8px; }
+.a7-fig.dark { background: #0d1016; border: 0; padding: 0; }
+.a7-fig svg text { font-family: var(--font-body); fill: #17191c; }
+.a7-fig svg .t-muted { fill: #5e5d59; }
+.a7-fig svg .mono { font-family: "IBM Plex Mono", Consolas, monospace; }
+.a7-fig svg .cpu, .a7-fig svg .peri, .a7-fig svg .box { fill: #fff; stroke: #17191c; stroke-width: 1.3; }
+.a7-fig svg .npu { fill: #fff; stroke: #17191c; stroke-width: 2.2; }
+.a7-fig svg .dft { fill: #f0eee6; stroke: #17191c; stroke-width: 1.3; }
+.a7-fig svg .wire { stroke: #17191c; fill: none; stroke-width: 1.3; }
+.a7-fig svg .wire-npu { stroke: #17191c; fill: none; stroke-width: 2.4; }
+.a7-fig svg .wire-dft { stroke: #17191c; fill: none; stroke-width: 1.3; stroke-dasharray: 6 4; }
+.a7-fig svg .grid { stroke: #17191c; stroke-width: 1; }
+.a7-fig svg .arrow, .a7-fig svg .arrow-npu, .a7-fig svg .arrow-dft { fill: #17191c; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="../index.html">
+      <strong>Khoi Nguyen</strong>
+      <span>Digital IC / ASIC · EE, U of Manitoba</span>
+    </a>
+    <nav aria-label="Primary">
+      <ul class="nav-list" id="nav-list">
+        <li><a href="../index.html#experience">Experience</a></li>
+        <li><a href="../index.html#projects">Projects</a></li>
+        <li><a href="../index.html#fabrication">Fabrication</a></li>
+        <li><a href="../research.html">Research</a></li>
+        <li><a href="../index.html#publications">Publications</a></li>
+        <li><a href="../index.html#skills">Skills</a></li>
+        <li><a href="../about.html">About</a></li>
+        <li><a href="../index.html#contact">Contact</a></li>
+        <li><a class="nav-cv" href="../assets/khoi-nguyen-cv.pdf">Résumé</a></li>
+      </ul>
+    </nav>
+    <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="nav-list">
+      <span class="nav-toggle-bars"><span></span><span></span><span></span></span>
+    </button>
+  </div>
+</header>
+
+<main id="main" class="a7">
+  <section class="page-hero">
+    <div class="wrap two-col">
+      <div>
+        <a class="breadcrumb" href="../index.html#projects">&larr; All projects</a>
+        <p class="label">NPU &middot; SKY130 130&nbsp;nm &middot; Clock gating &middot; Scan DFT &middot; Tiny Tapeout &middot; in progress</p>
+        <h1>One-Tile int4 NPU (2x2 MAC Array) for Tiny Tapeout</h1>
+        <p class="dek">A 2×2 int4 multiply-accumulate array with 16-bit accumulators, one clock gate per row and a 96-flop scan chain, taken from RTL to a signed-off layout in a single 161&nbsp;×&nbsp;112&nbsp;µm Tiny Tapeout tile. Built for the TTSKY26d shuttle; the demo board's microcontroller drives it over the pins.</p>
+        <p class="a7-facts">50&nbsp;MHz with timing met at all 12 corners (−40…100&nbsp;°C, 1.60–1.95&nbsp;V). DRC, LVS and antenna clean, Tiny Tapeout precheck 15/15. Clock gating cuts core power by 45–59% (vector-based, pre-silicon estimate).</p>
+        <p style="margin-top:24px;"><a class="btn btn-primary" href="https://github.com/AKLN0401/npu-2x2-int4-16bit">Source on GitHub</a> <a class="btn" href="#layout">3D layout</a></p>
+      </div>
+      <figure class="a7-plate"><img data-asset="iso3d" alt="3D view of the NPU tile layout" width="1400" height="900"><figcaption>3D view of the routed tile, SKY130 layer stack</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="section" id="specs" style="border-top:none;">
+    <div class="wrap">
+      <div class="section-head"><h2>Specs</h2><span class="section-index">OVERVIEW</span></div>
+      <div class="two-col">
+        <div><div class="table-scroll"><table class="data-table a7-pnr">
+        <thead><tr><th colspan="2">Chip</th></tr></thead>
+        <tbody>
+          <tr><th>Process</th><td>SkyWater SKY130 (130&nbsp;nm), <code>sky130_fd_sc_hd</code> cells</td></tr>
+          <tr><th>Shuttle</th><td>Tiny Tapeout TTSKY26d, deadline 2026-11-30</td></tr>
+          <tr><th>Area</th><td>1×1 tile, 161.0 × 111.52&nbsp;µm = 17,955&nbsp;µm²</td></tr>
+          <tr><th>Top module</th><td><code>tt_um_akln0401_npu</code></td></tr>
+          <tr><th>Clock</th><td>50&nbsp;MHz; setup +5.70&nbsp;ns, hold +0.162&nbsp;ns over 12 corners (−40…100&nbsp;°C, 1.60–1.95&nbsp;V)</td></tr>
+          <tr><th>Cells</th><td>1,595 placed (excl. fill): 98 flops, 2 clock gates, 914 logic gates, 321 timing/fanout buffers, 22 clock-tree cells, 225 taps, 13 diodes</td></tr>
+          <tr><th>Utilization</th><td>84.4% · 32.8&nbsp;mm of routing on met1–met4</td></tr>
+          <tr><th>Power</th><td>0.19–0.28&nbsp;mW at 50&nbsp;MHz, typical corner, depending on the workload (vector-based estimate, <a href="#cg-power">see clock gating</a>)</td></tr>
+        </tbody>
+      </table></div></div>
+        <div><div class="table-scroll"><table class="data-table a7-pnr">
+        <thead><tr><th colspan="2">Accelerator</th></tr></thead>
+        <tbody>
+          <tr><th>Array</th><td>2×2 processing elements, signed int4 × int4</td></tr>
+          <tr><th>Accumulators</th><td>4 × 16-bit, two's-complement wrap; 511 worst-case steps without overflow</td></tr>
+          <tr><th>Per step</th><td>4 MACs in one clock (outer product <code>acc[i][j] += a[i]·b[j]</code>)</td></tr>
+          <tr><th>Throughput</th><td>One register write ≥ 6 clocks, a step needs 3 writes → ≤ 2.8M steps/s (11M MAC/s) at 50&nbsp;MHz; the host's GPIO speed sets the real rate</td></tr>
+          <tr><th>Interface</th><td>8-bit write data, 8-bit read data, 3-bit address, write strobe; 7 registers</td></tr>
+          <tr><th>Clock gating</th><td>1 ICG (<code>dlclkp_1</code>) per row; a row's clock runs only on step/clear cycles. Saves 45–59% of core power (<a href="#cg-power">see clock gating</a>)</td></tr>
+          <tr><th>Test</th><td>Full scan: 96 flops in one chain, <code>uio[6]</code> → <code>uio[7]</code> (only the 2 reset-sync flops are off it)</td></tr>
+        </tbody>
+      </table></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how">
+    <div class="wrap">
+      <div class="section-head"><h2>How it works</h2><span class="section-index">OPERATION</span></div>
+      <p class="pd-lede">The chip is a small matrix-multiply engine. The microcontroller on the Tiny Tapeout demo board acts as the host: it writes operands into the chip over the pins, tells it to step, and reads the results back.</p>
+      <ol class="process-list">
+        <li><div><h4>Write a register</h4><p>The host puts the address on <code>uio[2:0]</code> and the byte on <code>ui[7:0]</code>, then raises the strobe <code>uio[3]</code>. The strobe is synchronized to the chip clock (2 flops) and its rising edge loads the byte.</p></div></li>
+        <li><div><h4>Load operands</h4><p><code>A0</code> holds two int4 values <code>a[0]</code>, <code>a[1]</code> (one column of A), <code>B0</code> holds <code>b[0]</code>, <code>b[1]</code> (one row of B).</p></div></li>
+        <li><div><h4>Step</h4><p>A <code>CTRL</code> step (or, in auto mode, any <code>B1</code> write) opens each enabled row's clock gate for exactly one cycle, and all four PEs add <code>a[i]·b[j]</code> to their accumulator. <code>K</code> steps compute a 2×2 block of <code>C = A·B</code> with inner dimension <code>K</code> (up to 511 without overflow).</p></div></li>
+        <li><div><h4>Read back</h4><p>Writing <code>RSEL</code> picks an accumulator and a byte; <code>uo[7:0]</code> then shows that byte. Four reads give the 32-bit sign-extended value.</p></div></li>
+        <li><div><h4>Sleep between steps</h4><p>When nothing is stepping, the row clock gates are closed: the 64 accumulator flops and their clock tree get no clock edges (<a href="#cg">clock gating</a>).</p></div></li>
+        <li><div><h4>Test on silicon</h4><p><code>test_mode</code> (<code>uio[4]</code>) forces the clocks on and links all 96 flops into one shift register from <code>uio[6]</code> to <code>uio[7]</code>, so any internal state can be loaded and read out on the bench (<a href="#dft">scan chain</a>).</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section" id="layout">
+    <div class="wrap">
+      <div class="section-head"><h2>Layout: GDS and 3D model</h2><span class="section-index">LIBRELANE 3.0.14</span></div>
+      <p class="pd-lede">The final GDS from the place-and-route run, rendered with KLayout. It has 39 rows of standard cells (2.72&nbsp;µm each). The tile's 4 pairs of vertical met4 power stripes cross the whole tile, and the 43 signal pins sit on the top edge, where the Tiny Tapeout mux connects them.</p>
+      <div class="a7-photos">
+        <div>
+          <figure class="a7-fig"><img data-asset="gds" alt="Final GDS of the tile, all layers, SKY130 KLayout colours" width="1400" height="968"></figure>
+          <p class="a7-cap">Whole tile, all layers, SKY130 colours. Fine texture: standard cells. Line grid: met1–met4 routing and power.</p>
+        </div>
+        <div>
+          <figure class="a7-fig dark"><img data-asset="routing" alt="Routing layers only on a dark background" width="1400" height="968"></figure>
+          <p class="a7-cap">Routing only: met1 blue, met2 red, met3 green, met4 orange; white = met4 power stripes and pins.</p>
+        </div>
+      </div>
+      <h3 style="margin-top:40px;">Interactive 3D model</h3>
+      <p class="pd-lede">The same GDS as a 3D model. Each layer is extruded at its height in the SKY130 stack (heights are exaggerated, ×4 by default; use the slider). Click to interact: drag to rotate, right-drag or shift-drag to pan, wheel or pinch to zoom; ⤢ goes full screen. The <b>Metal</b> preset hides the transistor layers, <b>Cells</b> shows only them.</p>
+      <div id="gds3d"></div>
+      <p class="a7-cap">174,710 shapes in 13 layers (diff, tap, poly, licon, li1, mcon, met1, via, met2, via2, met3, via3, met4), drawn with WebGL2; browsers without WebGL2 show a still image.</p>
+      <figure class="a7-fig dark"><img data-asset="close3d" alt="3D close-up of the routing layers" width="1400" height="900"></figure>
+      <p class="a7-cap">Close-up: met4 power stripes (orange) on top, met3 (green) straps and signals, met2 (red) and met1 (blue) routing below, with the via stacks (grey) between them.</p>
+    </div>
+  </section>
+
+  <section class="section" id="tapeout">
+    <div class="wrap">
+      <div class="section-head"><h2>Tapeout</h2><span class="section-index">SIGNOFF</span></div>
+      <p class="pd-lede">Signoff on the final layout. The local flow is the same as Tiny Tapeout's GitHub <code>gds</code> action (<code>tt-support-tools</code> + LibreLane 3.0.14), and the precheck is the same set of checks the shuttle runs.</p>
+      <div class="table-scroll"><table class="data-table a7-pnr">
+        <thead><tr><th>Check</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><th>Physical: Magic DRC, LVS, antenna, routing DRC (flow)</th><td class="ok">0 / 0 / 0 / 0</td><td>LibreLane signoff</td></tr>
+          <tr><th>TT precheck: Magic + KLayout DRC (FEOL, BEOL, off-grid), pins, boundary, power, layers</th><td class="ok">15 / 15</td><td>same checks as the shuttle</td></tr>
+          <tr><th>Setup, 12 corners</th><td class="ok">+5.70 ns worst at ss, −40&nbsp;°C, 1.60&nbsp;V</td><td>0 violations</td></tr>
+          <tr><th>Hold, 12 corners</th><td class="ok">+0.162 ns worst at ff, −40&nbsp;°C, 1.95&nbsp;V</td><td>0 violations</td></tr>
+          <tr><th>Max slew / max cap</th><td><b>10 / 0</b> slew ≤ 0.84&nbsp;ns vs 0.75 limit, cold slow corner only</td><td>on the read-mux select nets, not a clock or critical path; already in the timing numbers</td></tr>
+          <tr><th>Power grid, IR drop</th><td class="ok">0 violations, worst drop 0.07&nbsp;mV</td><td>LibreLane signoff</td></tr>
+          <tr><th>RTL simulation (cocotb, through the pins)</th><td class="ok">17 / 17</td><td><code>test/</code>: incl. all 256 int4 operand pairs on every MAC unit and exact 16-bit overflow boundaries</td></tr>
+          <tr><th>Gate-level simulation of the PnR netlist</th><td class="ok">17 / 17</td><td>same tests, also in CI</td></tr>
+          <tr><th>Gate level with SDF delays at 50&nbsp;MHz (ss −40&nbsp;°C, ss 100&nbsp;°C, tt, ff −40&nbsp;°C)</th><td class="ok">8 / 8 each</td><td><code>test/extra/sdf/</code></td></tr>
+          <tr><th>RTL vs. netlist random co-simulation, every output every cycle</th><td class="ok">0 mismatches, 20M cycles + 6M with SDF at 3 corners</td><td><code>test/extra/cosim/</code>; 3 planted RTL bugs all caught</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="section" id="system">
+    <div class="wrap">
+      <div class="section-head"><h2>System</h2><span class="section-index">ARCHITECTURE</span></div>
+      <p class="pd-lede">The microcontroller writes operand bytes and commands over a small register bus, the chip does all four multiply-accumulates in one clock, and the host reads accumulators back one byte at a time through <code>RSEL</code>.</p>
+      <figure class="a7-fig" tabindex="0"><svg viewBox="0 0 960 360" role="img" aria-label="System block diagram">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
+    <marker id="ahn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow-npu"/></marker>
+    <marker id="ahd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow-dft"/></marker>
+  </defs>
+  <!-- host -->
+  <rect class="cpu" x="16" y="60" width="150" height="280" rx="4"/>
+  <text x="91" y="184" text-anchor="middle" font-weight="600">Host MCU</text>
+  <text x="91" y="204" text-anchor="middle" font-size="12" class="t-muted">RP2040 / RP2350</text>
+  <text x="91" y="220" text-anchor="middle" font-size="12" class="t-muted">on the demo board</text>
+  <!-- chip outline -->
+  <rect x="250" y="20" width="694" height="320" rx="4" fill="none" stroke="var(--line)" stroke-dasharray="4 4"/>
+  <text x="262" y="40" font-size="12" class="t-muted mono">tt_um_akln0401_npu · 1×1 tile</text>
+  <!-- pins -->
+  <g font-size="12" class="mono">
+    <text x="174" y="84">ui[7:0]</text><text x="174" y="124">uio[2:0]</text><text x="174" y="164">uio[3]</text>
+    <text x="174" y="224">uio[4:6]</text><text x="174" y="284">uo[7:0]</text><text x="174" y="318">uio[7]</text>
+  </g>
+  <path class="wire" d="M166,90 H300" marker-end="url(#ah)"/>
+  <path class="wire" d="M166,130 H300" marker-end="url(#ah)"/>
+  <path class="wire" d="M166,170 H300" marker-end="url(#ah)"/>
+  <path class="wire-dft" d="M166,230 H300" marker-end="url(#ahd)"/>
+  <path class="wire" d="M610,290 H166" marker-end="url(#ah)"/>
+  <!-- interface -->
+  <rect class="peri" x="300" y="60" width="200" height="190" rx="4"/>
+  <text x="400" y="84" text-anchor="middle" font-weight="600">Pin interface</text>
+  <g font-size="12">
+    <text x="316" y="110">strobe sync + edge detect</text>
+    <text x="316" y="132">A / B operand regs</text>
+    <text x="316" y="154">CTRL: clear, step, auto</text>
+    <text x="316" y="176">ROWEN mask, RSEL</text>
+    <text x="316" y="198">step_q / clear_q (registered)</text>
+  </g>
+  <rect class="dft" x="310" y="214" width="180" height="26" rx="3"/>
+  <text x="400" y="231" text-anchor="middle" font-size="11.5">test_mode · scan_en · scan_in</text>
+  <!-- array -->
+  <rect class="npu" x="560" y="60" width="340" height="190" rx="4"/>
+  <text x="730" y="84" text-anchor="middle" font-weight="600">MAC array (2 × 2)</text>
+  <path class="wire" d="M638,115 H772 M638,161 H772"/>
+  <g font-size="11.5">
+    <rect class="dft" x="592" y="100" width="46" height="30" rx="3"/><text x="615" y="119" text-anchor="middle">ICG</text>
+    <rect class="box" x="652" y="100" width="108" height="30" rx="3"/><text x="706" y="119" text-anchor="middle">PE 0,0</text>
+    <rect class="box" x="772" y="100" width="108" height="30" rx="3"/><text x="826" y="119" text-anchor="middle">PE 0,1</text>
+    <rect class="dft" x="592" y="146" width="46" height="30" rx="3"/><text x="615" y="165" text-anchor="middle">ICG</text>
+    <rect class="box" x="652" y="146" width="108" height="30" rx="3"/><text x="706" y="165" text-anchor="middle">PE 1,0</text>
+    <rect class="box" x="772" y="146" width="108" height="30" rx="3"/><text x="826" y="165" text-anchor="middle">PE 1,1</text>
+    <text x="740" y="236" text-anchor="middle" class="t-muted">one gated clock per row · int4 × int4 → 16-bit accumulator</text>
+  </g>
+  <path class="wire-npu" d="M500,138 H572 V115 H592" marker-end="url(#ahn)"/>
+  <path class="wire-npu" d="M572,138 V161 H592" marker-end="url(#ahn)"/>
+  <text x="530" y="130" text-anchor="middle" font-size="11" class="t-muted">step</text>
+  <path class="wire-npu" d="M500,200 H560" marker-end="url(#ahn)"/>
+  <text x="530" y="192" text-anchor="middle" font-size="11" class="t-muted">a, b</text>
+  <!-- read mux -->
+  <rect class="peri" x="610" y="272" width="180" height="36" rx="4"/>
+  <text x="700" y="295" text-anchor="middle" font-size="12.5">read mux (RSEL) → byte</text>
+  <path class="wire-npu" d="M730,250 V272" marker-end="url(#ahn)"/>
+  <!-- scan -->
+  <path class="wire-dft" d="M400,250 V262 H545 V226 H560" marker-end="url(#ahd)"/>
+  <path class="wire-dft" d="M900,226 H920 V324 H166" marker-end="url(#ahd)"/>
+  <text x="928" y="246" font-size="11" class="t-muted" transform="rotate(90 928 246)">scan_out</text>
+</svg></figure>
+      <p class="a7-cap">Data path (heavy lines), register bus (thin lines), scan chain (dashed lines). <code>uio_oe</code> is fixed at <code>0x80</code>: only <code>uio[7]</code> is an output, driven 0 unless <code>test_mode</code>.</p>
+    </div>
+  </section>
+
+  <section class="section" id="regs">
+    <div class="wrap">
+      <div class="section-head"><h2>Register map</h2><span class="section-index">INTERFACE</span></div>
+      <p class="pd-lede">Write-only registers, 3-bit address on <code>uio[2:0]</code>. Operands are signed int4 (−8…7), two per byte.</p>
+      <div class="table-scroll"><table class="data-table a7-pnr">
+        <thead><tr><th>Addr</th><th>Name</th><th>Bits</th><th>Reset</th></tr></thead>
+        <tbody>
+          <tr><th>0</th><td>A0</td><td><code>a[0]</code> = [3:0], <code>a[1]</code> = [7:4]</td><td>0</td></tr>
+          <tr><th>1</th><td>A1</td><td>unused (rows 2–3 do not exist in the 2×2 array)</td><td>0</td></tr>
+          <tr><th>2</th><td>B0</td><td><code>b[0]</code> = [3:0], <code>b[1]</code> = [7:4]</td><td>0</td></tr>
+          <tr><th>3</th><td>B1</td><td>data unused (2×2 array); the write steps the array if <code>CTRL.auto</code> is set</td><td>0</td></tr>
+          <tr><th>4</th><td>CTRL</td><td>[0] clear all accumulators · [1] step · [2] auto (sticky). Clear beats step in the same write</td><td>auto = 0</td></tr>
+          <tr><th>5</th><td>ROWEN</td><td>[1:0] row enable; a disabled row's clock stops</td><td>all 1</td></tr>
+          <tr><th>6</th><td>RSEL</td><td>[7] = 0: <code>uo</code> = byte [5:4] of accumulator [3:0] (index <code>2·i + j</code>, sign-extended to 32 bit) · [7] = 1: <code>uo</code> = ID byte [1:0]</td><td>0x00</td></tr>
+          <tr><th>7</th><td>—</td><td>reserved</td><td></td></tr>
+        </tbody>
+      </table></div>
+      <p class="pd-lede" style="margin-top:20px;">ID bytes: <code>4E 22 10 01</code> = 'N', 2×2 array, 16-bit accumulators, version 1. Reset clears every accumulator and the A/B operand registers.</p>
+    </div>
+  </section>
+
+  <section class="section" id="array">
+    <div class="wrap">
+      <div class="section-head"><h2>MAC array</h2><span class="section-index">DATAPATH</span></div>
+      <p class="pd-lede">One step is an outer product: for every enabled row <code>i</code> and every column <code>j</code>, <code>acc[i][j] += a[i] · b[j]</code>. A matrix product <code>C = A·B</code> with inner dimension <code>K</code> is <code>K</code> steps, each loading one column of <code>A</code> and one row of <code>B</code>.</p>
+      <pre><code><span class="l"><span class="c">// npu_pe.v — one MAC unit, clocked by its row's gated clock</span></span><span class="l"><span class="k">if</span> (scan_en)    acc &lt;= {acc[ACC_W-2:0], scan_in};</span><span class="l"><span class="k">else</span> <span class="k">if</span> (clear) acc &lt;= 0;</span><span class="l"><span class="k">else</span> <span class="k">if</span> (step)  acc &lt;= acc + sign_extend(a * b);   <span class="c">// int4 × int4 → 8-bit product</span></span></code></pre>
+      <div class="a7-grid">
+        <div class="a7-card"><h4>Accumulator width: 16 bit</h4><span class="a7-status">511 worst-case steps</span><p>The largest product is −8·−8 = 64. 16-bit accumulators (max 32,767) take 511 worst-case steps, so a whole 64-input dot product (8×8 digit image) fits in one pass; 12-bit would have allowed only 31 (the host would have to split <code>K</code>). Overflow wraps (two's complement).</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="cg">
+    <div class="wrap">
+      <div class="section-head"><h2>Clock gating</h2><span class="section-index">LOW POWER</span></div>
+      <p class="pd-lede">Each row has one <code>sky130_fd_sc_hd__dlclkp_1</code> integrated clock gate (wrapper <code>src/dft/clk_gate.v</code>). The latch is transparent while <code>clk</code> is low, so the enable can't glitch the gated clock.</p>
+      <pre><span class="l"><span class="c">// functional enable</span></span><span class="l">en[i] = (step_q &amp;&amp; !scan_en &amp;&amp; row_en[i]) || clear_q || !rstn</span><span class="l"><span class="c">// test mode forces the clock on</span></span><span class="l">GATE  = en[i] || test_mode</span></pre>
+      <p class="pd-lede" style="margin-top:20px;">A row's accumulators and their clock tree toggle only on the cycle after a step or clear. Between steps the host is busy writing operands for dozens of chip clocks, so the array is idle almost all the time. The cocotb test counts the edges of each row's gated clock: for every <code>ROWEN</code> mask, 3 steps give 3 edges on an enabled row and 0 on a disabled one, and test mode keeps both clocks running.</p>
+
+      <h3 id="cg-power" style="margin-top:40px;">Power saved: vector-based estimate</h3>
+      <p class="pd-lede">To find out what the clock gates buy, the post-PnR netlist was simulated running real workloads, and its switching activity went into the signoff timer's power engine with the routed parasitics. Each workload ran twice with identical bus traffic: once normally, and once with <code>test_mode</code> high, which forces both row clocks on. That second run is the design as it would be without clock gating.</p>
+      <p class="pd-lede"><b>58.6%</b> less core power with the clock gates working while the array waits for the host (idle at 50&nbsp;MHz, typical corner). Across all four workloads and three corners the saving is 45–59%.</p>
+      <figure class="a7-fig" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" font-family="Inter Tight, Helvetica Neue, Arial, sans-serif" font-size="13" role="img" aria-label="Core power with and without clock gating for four workloads">
+<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fff"/><line x1="0" y1="0" x2="0" y2="6" stroke="#000" stroke-width="1.6"/></pattern></defs>
+<rect width="760" height="400" fill="none"/>
+<line x1="73" y1="316.0" x2="78" y2="316.0" stroke="#000" stroke-width="1"/>
+<text x="69" y="320.0" text-anchor="end">0</text>
+<line x1="78" y1="274.9" x2="740" y2="274.9" stroke="#bbb" stroke-width="0.7" stroke-dasharray="2 3"/>
+<line x1="73" y1="274.9" x2="78" y2="274.9" stroke="#000" stroke-width="1"/>
+<text x="69" y="278.9" text-anchor="end">100</text>
+<line x1="78" y1="233.7" x2="740" y2="233.7" stroke="#bbb" stroke-width="0.7" stroke-dasharray="2 3"/>
+<line x1="73" y1="233.7" x2="78" y2="233.7" stroke="#000" stroke-width="1"/>
+<text x="69" y="237.7" text-anchor="end">200</text>
+<line x1="78" y1="192.6" x2="740" y2="192.6" stroke="#bbb" stroke-width="0.7" stroke-dasharray="2 3"/>
+<line x1="73" y1="192.6" x2="78" y2="192.6" stroke="#000" stroke-width="1"/>
+<text x="69" y="196.6" text-anchor="end">300</text>
+<line x1="78" y1="151.4" x2="740" y2="151.4" stroke="#bbb" stroke-width="0.7" stroke-dasharray="2 3"/>
+<line x1="73" y1="151.4" x2="78" y2="151.4" stroke="#000" stroke-width="1"/>
+<text x="69" y="155.4" text-anchor="end">400</text>
+<line x1="78" y1="110.3" x2="740" y2="110.3" stroke="#bbb" stroke-width="0.7" stroke-dasharray="2 3"/>
+<line x1="73" y1="110.3" x2="78" y2="110.3" stroke="#000" stroke-width="1"/>
+<text x="69" y="114.3" text-anchor="end">500</text>
+<line x1="78" y1="69.1" x2="740" y2="69.1" stroke="#bbb" stroke-width="0.7" stroke-dasharray="2 3"/>
+<line x1="73" y1="69.1" x2="78" y2="69.1" stroke="#000" stroke-width="1"/>
+<text x="69" y="73.1" text-anchor="end">600</text>
+<line x1="78" y1="28.0" x2="740" y2="28.0" stroke="#bbb" stroke-width="0.7" stroke-dasharray="2 3"/>
+<line x1="73" y1="28.0" x2="78" y2="28.0" stroke="#000" stroke-width="1"/>
+<text x="69" y="32.0" text-anchor="end">700</text>
+<text transform="translate(18 172) rotate(-90)" text-anchor="middle">Core power (µW)</text>
+<path d="M78,28 V316 H740" fill="none" stroke="#000" stroke-width="1.3"/>
+<rect x="105.8" y="237.3" width="52" height="78.7" fill="url(#hatch)" stroke="#000" stroke-width="1.2"><title>Idle, clock gating on: 191 µW</title></rect>
+<text x="131.8" y="232.3" text-anchor="middle">191</text>
+<rect x="163.8" y="126.1" width="52" height="189.9" fill="#000" stroke="#000" stroke-width="1.2"><title>Idle, no clock gating: 462 µW</title></rect>
+<text x="189.8" y="121.1" text-anchor="middle">462</text>
+<text x="160.8" y="336" text-anchor="middle">Idle</text>
+<text x="160.8" y="353" text-anchor="middle" font-style="italic">−58.6%</text>
+<rect x="271.2" y="234.8" width="52" height="81.2" fill="url(#hatch)" stroke="#000" stroke-width="1.2"><title>Slow host, clock gating on: 197 µW</title></rect>
+<text x="297.2" y="229.8" text-anchor="middle">197</text>
+<rect x="329.2" y="124.0" width="52" height="192.0" fill="#000" stroke="#000" stroke-width="1.2"><title>Slow host, no clock gating: 467 µW</title></rect>
+<text x="355.2" y="119.0" text-anchor="middle">467</text>
+<text x="326.2" y="336" text-anchor="middle">Slow host</text>
+<text x="326.2" y="353" text-anchor="middle" font-style="italic">−57.7%</text>
+<rect x="436.8" y="202.2" width="52" height="113.8" fill="url(#hatch)" stroke="#000" stroke-width="1.2"><title>Max bus rate, clock gating on: 277 µW</title></rect>
+<text x="462.8" y="197.2" text-anchor="middle">277</text>
+<rect x="494.8" y="96.5" width="52" height="219.5" fill="#000" stroke="#000" stroke-width="1.2"><title>Max bus rate, no clock gating: 534 µW</title></rect>
+<text x="520.8" y="91.5" text-anchor="middle">534</text>
+<text x="491.8" y="336" text-anchor="middle">Max bus rate</text>
+<text x="491.8" y="353" text-anchor="middle" font-style="italic">−48.2%</text>
+<rect x="602.2" y="209.0" width="52" height="107.0" fill="url(#hatch)" stroke="#000" stroke-width="1.2"><title>Max bus rate, row 1 off, clock gating on: 260 µW</title></rect>
+<text x="628.2" y="204.0" text-anchor="middle">260</text>
+<rect x="660.2" y="100.6" width="52" height="215.4" fill="#000" stroke="#000" stroke-width="1.2"><title>Max bus rate, row 1 off, no clock gating: 524 µW</title></rect>
+<text x="686.2" y="95.6" text-anchor="middle">524</text>
+<text x="657.2" y="336" text-anchor="middle">Max bus rate,</text>
+<text x="657.2" y="351" text-anchor="middle">row 1 off</text>
+<text x="657.2" y="368" text-anchor="middle" font-style="italic">−50.3%</text>
+<rect x="84" y="30" width="208" height="58" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<rect x="92" y="38" width="20" height="13" fill="url(#hatch)" stroke="#000" stroke-width="1.2"/><text x="120" y="49">clock gating on</text>
+<rect x="92" y="63" width="20" height="13" fill="#000" stroke="#000" stroke-width="1.2"/><text x="120" y="74">no clock gating</text>
+</svg></figure>
+      <p class="a7-cap">Core power at the typical corner (tt, 25&nbsp;°C, 1.80&nbsp;V), 50&nbsp;MHz, 400&nbsp;µs per run. Activity from unit-delay gate-level simulation; all 4,546 pins annotated.</p>
+      <details><summary>Table: every workload at three corners</summary>
+      <div class="table-scroll"><table class="data-table a7-pnr">
+        <thead><tr><th>Workload</th><th>Corner</th><th class="num">Gating on</th><th class="num">No gating</th><th class="num">Saved</th></tr></thead>
+        <tbody>
+          <tr><th>Idle</th><td>tt 25&nbsp;°C 1.80&nbsp;V</td><td class="num">191.3&nbsp;µW</td><td class="num">461.5&nbsp;µW</td><td class="num">270.2&nbsp;µW (58.6%)</td></tr>
+          <tr><th>Idle</th><td>ff −40&nbsp;°C 1.95&nbsp;V</td><td class="num">220.6&nbsp;µW</td><td class="num">532.5&nbsp;µW</td><td class="num">312.0&nbsp;µW (58.6%)</td></tr>
+          <tr><th>Idle</th><td>ss −40&nbsp;°C 1.60&nbsp;V</td><td class="num">146.9&nbsp;µW</td><td class="num">354.6&nbsp;µW</td><td class="num">207.7&nbsp;µW (58.6%)</td></tr>
+          <tr><th>Slow host</th><td>tt 25&nbsp;°C 1.80&nbsp;V</td><td class="num">197.4&nbsp;µW</td><td class="num">466.7&nbsp;µW</td><td class="num">269.3&nbsp;µW (57.7%)</td></tr>
+          <tr><th>Slow host</th><td>ff −40&nbsp;°C 1.95&nbsp;V</td><td class="num">227.5&nbsp;µW</td><td class="num">538.4&nbsp;µW</td><td class="num">310.9&nbsp;µW (57.7%)</td></tr>
+          <tr><th>Slow host</th><td>ss −40&nbsp;°C 1.60&nbsp;V</td><td class="num">151.7&nbsp;µW</td><td class="num">358.7&nbsp;µW</td><td class="num">207.0&nbsp;µW (57.7%)</td></tr>
+          <tr><th>Max bus rate</th><td>tt 25&nbsp;°C 1.80&nbsp;V</td><td class="num">276.7&nbsp;µW</td><td class="num">533.6&nbsp;µW</td><td class="num">256.9&nbsp;µW (48.2%)</td></tr>
+          <tr><th>Max bus rate</th><td>ff −40&nbsp;°C 1.95&nbsp;V</td><td class="num">316.7&nbsp;µW</td><td class="num">613.4&nbsp;µW</td><td class="num">296.6&nbsp;µW (48.4%)</td></tr>
+          <tr><th>Max bus rate</th><td>ss −40&nbsp;°C 1.60&nbsp;V</td><td class="num">213.0&nbsp;µW</td><td class="num">410.6&nbsp;µW</td><td class="num">197.5&nbsp;µW (48.1%)</td></tr>
+          <tr><th>Max bus rate, row 1 off</th><td>tt 25&nbsp;°C 1.80&nbsp;V</td><td class="num">260.0&nbsp;µW</td><td class="num">523.6&nbsp;µW</td><td class="num">263.6&nbsp;µW (50.3%)</td></tr>
+          <tr><th>Max bus rate, row 1 off</th><td>ff −40&nbsp;°C 1.95&nbsp;V</td><td class="num">298.0&nbsp;µW</td><td class="num">602.3&nbsp;µW</td><td class="num">304.3&nbsp;µW (50.5%)</td></tr>
+          <tr><th>Max bus rate, row 1 off</th><td>ss −40&nbsp;°C 1.60&nbsp;V</td><td class="num">200.2&nbsp;µW</td><td class="num">402.8&nbsp;µW</td><td class="num">202.6&nbsp;µW (50.3%)</td></tr>
+          <tr><th>Max bus rate, with SDF delays (glitches included)</th><td>tt 25&nbsp;°C 1.80&nbsp;V</td><td class="num">308.2&nbsp;µW</td><td class="num">561.7&nbsp;µW</td><td class="num">253.5&nbsp;µW (45.1%)</td></tr>
+        </tbody>
+      </table></div>
+      </details>
+
+      <h3 style="margin-top:40px;">Where it comes from</h3>
+      <p class="pd-lede">At the maximum bus rate (typical corner) the saving is all clock: the gated branches of the clock tree and the clock pins of the 64 accumulator flops stop toggling between steps. The logic does the same work either way.</p>
+      <div class="table-scroll"><table class="data-table a7-pnr">
+        <thead><tr><th>Group</th><th class="num">Gating on</th><th class="num">No gating</th><th class="num">Difference</th></tr></thead>
+        <tbody>
+          <tr><th>Clock tree</th><td class="num">130.3&nbsp;µW</td><td class="num">266.0&nbsp;µW</td><td class="num">−135.7&nbsp;µW</td></tr>
+          <tr><th>Flops (incl. their clock pins)</th><td class="num">79.4&nbsp;µW</td><td class="num">200.9&nbsp;µW</td><td class="num">−121.5&nbsp;µW</td></tr>
+          <tr><th>Logic</th><td class="num">66.9&nbsp;µW</td><td class="num">66.7&nbsp;µW</td><td class="num">+0.3&nbsp;µW</td></tr>
+          <tr><th>Total</th><td class="num">276.7&nbsp;µW</td><td class="num">533.6&nbsp;µW</td><td class="num">−256.9&nbsp;µW</td></tr>
+        </tbody>
+      </table></div>
+      <p class="pd-lede" style="margin-top:20px;">With the gates working, the NPU's power hardly depends on the workload (191&nbsp;µW idle, 277&nbsp;µW at the maximum bus rate). What's left is the always-on part: the root of the clock tree and the 34 interface and synchronizer flops. Turning a row off with <code>ROWEN</code> only saves another 17&nbsp;µW here, because each row's clock is already off about 95% of the time.</p>
+
+      <div class="a7-grid" style="margin-top:40px;">
+        <div class="a7-card"><h4>Real netlist, real protocol</h4><p>The post-PnR netlist (the same file the Tiny Tapeout CI builds) is driven through its pins at 50&nbsp;MHz by a host model that follows the datasheet write protocol, streaming int4 matrix-multiply steps (A0, B0, CTRL step) with fixed-seed random operands.</p></div>
+        <div class="a7-card"><h4>Same traffic, gating defeated</h4><p>The baseline repeats the identical stimulus with <code>test_mode</code> high. That forces both clock gates open, while the MAC units still hold through their own step enables. Both runs end with the same accumulator values, so only the clocking differs.</p></div>
+        <div class="a7-card"><h4>Switching activity</h4><p>Icarus Verilog dumps every net to a VCD over a 400&nbsp;µs window. A second run with SDF back-annotated delays adds the glitches that unit-delay simulation misses.</p></div>
+        <div class="a7-card"><h4>Power analysis</h4><p>OpenSTA (LibreLane 3.0.14) reads the routed netlist, the extracted SPEF, the sky130 liberty power models and the VCD; all 4,546 pins get their activity from the simulation. The same is repeated at the typical, fast-cold and slow-cold corners.</p></div>
+        <div class="a7-card"><h4>Reproducible</h4><p><code>audit/power/run_power.sh</code> in the repository rebuilds every number on this page.</p></div>
+      </div>
+      <p class="note" style="margin-top:24px;">This is a pre-silicon estimate of this tile's 1.8&nbsp;V core only (no pads, Tiny Tapeout multiplexer or other projects). The absolute values depend on the liberty models; the gated/ungated ratio is the robust result. On the bench, the same comparison is one pin: run a workload with <code>uio[4]</code> (test_mode) low, then high with <code>uio[5]</code> low, and compare the core current (≈&nbsp;0.15&nbsp;mA difference expected at 1.8&nbsp;V).</p>
+    </div>
+  </section>
+
+  <section class="section" id="dft">
+    <div class="wrap">
+      <div class="section-head"><h2>Scan chain</h2><span class="section-index">DFT</span></div>
+      <p class="pd-lede">Mux-D scan in RTL. <code>test_mode</code> (<code>uio[4]</code>) forces all row clocks on and puts <code>scan_out</code> on <code>uio[7]</code>; <code>scan_en</code> (<code>uio[5]</code>) is ANDed with <code>test_mode</code>; <code>scan_in</code> is <code>uio[6]</code>. Every flop is on the chain except the two reset-synchronizer flops, which stay off it so reset remains controllable in test mode.</p>
+      <figure class="a7-fig" tabindex="0"><svg viewBox="0 0 960 120" role="img" aria-label="Scan chain order">
+  <defs><marker id="ahs" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-dft"/></marker></defs>
+  <g font-size="11.5" text-anchor="middle">
+    <text x="30" y="54" class="mono">uio[6]</text>
+    <rect class="peri" x="72" y="30" width="58" height="40" rx="3"/><text x="101" y="47">wr_sync</text><text x="101" y="62" class="t-muted">3</text>
+    <rect class="peri" x="141" y="30" width="58" height="40" rx="3"/><text x="170" y="47">a_reg</text><text x="170" y="62" class="t-muted">8</text>
+    <rect class="peri" x="210" y="30" width="58" height="40" rx="3"/><text x="239" y="47">b_reg</text><text x="239" y="62" class="t-muted">8</text>
+    <rect class="peri" x="279" y="30" width="58" height="40" rx="3"/><text x="308" y="47">auto</text><text x="308" y="62" class="t-muted">1</text>
+    <rect class="peri" x="348" y="30" width="58" height="40" rx="3"/><text x="377" y="47">row_en</text><text x="377" y="62" class="t-muted">2</text>
+    <rect class="peri" x="417" y="30" width="58" height="40" rx="3"/><text x="446" y="47">rsel</text><text x="446" y="62" class="t-muted">8</text>
+    <rect class="peri" x="486" y="30" width="70" height="40" rx="3"/><text x="521" y="47">step, clear</text><text x="521" y="62" class="t-muted">2</text>
+    <rect class="npu" x="567" y="30" width="68" height="40" rx="3"/><text x="601" y="47">PE 0,0</text><text x="601" y="62" class="t-muted">16</text>
+    <rect class="npu" x="646" y="30" width="68" height="40" rx="3"/><text x="680" y="47">PE 0,1</text><text x="680" y="62" class="t-muted">16</text>
+    <rect class="npu" x="725" y="30" width="68" height="40" rx="3"/><text x="759" y="47">PE 1,0</text><text x="759" y="62" class="t-muted">16</text>
+    <rect class="npu" x="804" y="30" width="68" height="40" rx="3"/><text x="838" y="47">PE 1,1</text><text x="838" y="62" class="t-muted">16</text>
+    <text x="916" y="54" class="mono">uio[7]</text>
+  </g>
+  <path class="wire-dft" d="M54,50 H72" marker-end="url(#ahs)"/>
+  <path class="wire-dft" d="M130,50 H141" marker-end="url(#ahs)"/>
+  <path class="wire-dft" d="M199,50 H210" marker-end="url(#ahs)"/>
+  <path class="wire-dft" d="M268,50 H279" marker-end="url(#ahs)"/>
+  <path class="wire-dft" d="M337,50 H348" marker-end="url(#ahs)"/>
+  <path class="wire-dft" d="M406,50 H417" marker-end="url(#ahs)"/>
+  <path class="wire-dft" d="M475,50 H486" marker-end="url(#ahs)"/>
+  <path class="wire-dft" d="M556,50 H567" marker-end="url(#ahs)"/>
+  <path class="wire-dft" d="M635,50 H646" marker-end="url(#ahs)"/>
+  <path class="wire-dft" d="M714,50 H725" marker-end="url(#ahs)"/>
+  <path class="wire-dft" d="M793,50 H804" marker-end="url(#ahs)"/>
+  <path class="wire-dft" d="M872,50 H890" marker-end="url(#ahs)"/>
+  <path class="grid" fill="none" d="M72,78 V86 H556 V78 M567,78 V86 H872 V78"/>
+  <g font-size="12" text-anchor="middle" class="t-muted">
+    <text x="314" y="104">pin interface · 32 flops</text>
+    <text x="719.5" y="104">MAC array, row-major · 64 flops</text>
+  </g>
+</svg></figure>
+      <p class="a7-cap">Chain order from <code>scan_in</code> to <code>scan_out</code>, with the flop count of each field. Every field shifts in LSB first.</p>
+      <p class="pd-lede" style="margin-top:20px;">Length = 3 + 8 + 8 + 1 + 2 + 8 + 2 + 4 × 16 = <b>96</b> flops. The shift test runs through the pins in RTL and on the gate-level netlist; the per-bit map is generated by <code>test/scan_map.py</code>.</p>
+    </div>
+  </section>
+
+  <section class="section" id="pins">
+    <div class="wrap">
+      <div class="section-head"><h2>Pinout</h2><span class="section-index">I/O</span></div>
+      <div class="table-scroll"><table class="data-table a7-pnr">
+        <thead><tr><th>Pin</th><th>Dir</th><th>Function</th></tr></thead>
+        <tbody>
+          <tr><th>ui[7:0]</th><td>in</td><td>Write data byte</td></tr>
+          <tr><th>uo[7:0]</th><td>out</td><td>Read byte selected by <code>RSEL</code> (accumulator byte or ID byte)</td></tr>
+          <tr><th>uio[2:0]</th><td>in</td><td>Register address</td></tr>
+          <tr><th>uio[3]</th><td>in</td><td>Write strobe, active high (synchronized, acts on its rising edge)</td></tr>
+          <tr><th>uio[4]</th><td>in</td><td><code>test_mode</code>: row clocks forced on, scan out enabled</td></tr>
+          <tr><th>uio[5]</th><td>in</td><td><code>scan_en</code> (only with <code>test_mode</code>)</td></tr>
+          <tr><th>uio[6]</th><td>in</td><td><code>scan_in</code></td></tr>
+          <tr><th>uio[7]</th><td>out</td><td><code>scan_out</code> (0 unless <code>test_mode</code>)</td></tr>
+          <tr><th>ena</th><td>—</td><td>unused</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="section" id="host">
+    <div class="wrap">
+      <div class="section-head"><h2>Host code</h2><span class="section-index">FIRMWARE</span></div>
+      <p class="pd-lede">Pseudocode for the demo board's microcontroller; <code>set_pins</code>/<code>read_uo</code> stand in for whatever GPIO API the firmware uses (TT MicroPython SDK or C SDK). Strobe timing is in chip clocks: MicroPython is far slower than 4 chip clocks per pin change, but C code writing the GPIO registers directly can toggle in a few ns, so it needs the explicit waits.</p>
+      <pre><code><span class="l">A0, A1, B0, B1, CTRL, ROWEN, RSEL = <span class="k">range</span>(7)</span><span class="l"></span><span class="l"><span class="k">def</span> wr(addr, data):</span><span class="l">    set_pins(ui=data, addr=addr, strobe=0)</span><span class="l">    set_pins(strobe=1)</span><span class="l">    wait_chip_clocks(4)     <span class="c"># hold addr/data ≥ 4 chip clocks</span></span><span class="l">    set_pins(strobe=0)</span><span class="l">    wait_chip_clocks(2)     <span class="c"># low ≥ 2 chip clocks before the next write</span></span><span class="l"></span><span class="l"><span class="k">def</span> nib(lo, hi):            <span class="c"># two signed int4 → one byte</span></span><span class="l">    <span class="k">return</span> (lo &amp; 0xF) | (hi &amp; 0xF) &lt;&lt; 4</span><span class="l"></span><span class="l"><span class="k">def</span> read_acc(n):            <span class="c"># 32-bit sign-extended accumulator n = COLS*i + j</span></span><span class="l">    v = 0</span><span class="l">    <span class="k">for</span> byte <span class="k">in</span> <span class="k">range</span>(4):</span><span class="l">        wr(RSEL, byte &lt;&lt; 4 | n)</span><span class="l">        v |= read_uo() &lt;&lt; (8 * byte)</span><span class="l">    <span class="k">return</span> v - (1 &lt;&lt; 32) <span class="k">if</span> v &amp; 0x80000000 <span class="k">else</span> v</span><span class="l"></span><span class="l"><span class="k">def</span> matmul(A, B):           <span class="c"># A: ROWS×K, B: K×COLS, int4 entries</span></span><span class="l">    wr(CTRL, 0b101)         <span class="c"># clear + auto-step on B1 writes</span></span><span class="l">    <span class="k">for</span> k <span class="k">in</span> <span class="k">range</span>(len(B)): <span class="c"># K up to 511 with 16-bit accumulators</span></span><span class="l">        wr(A0, nib(A[0][k], A[1][k]))                  <span class="c"># column k of A</span></span><span class="l">        wr(B0, nib(B[k][0], B[k][1]))                  <span class="c"># row k of B</span></span><span class="l">        wr(B1, 0)                                      <span class="c"># B1 data unused at 2×2: just steps</span></span><span class="l">    <span class="k">return</span> [[read_acc(COLS*i + j) <span class="k">for</span> j <span class="k">in</span> <span class="k">range</span>(COLS)] <span class="k">for</span> i <span class="k">in</span> <span class="k">range</span>(ROWS)]</span></code></pre>
+      <p class="a7-cap">For the 2×2 array (<code>ROWS = COLS = 2</code>). Without auto mode, step with <code>wr(CTRL, 0b010)</code> instead of the B1 write. The array size can be read from ID byte 1 (<code>wr(RSEL, 0x81)</code> → <code>0x22</code>).</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head"><h2>Next</h2><span class="section-index">ROADMAP</span></div>
+      <ol class="process-list">
+        <li><div><h4>Design, verification, layout</h4><p>Done: RTL, tests, PnR and local signoff above.</p></div></li>
+        <li><div><h4>Repository and CI</h4><p>Done: public GitHub repo; Tiny Tapeout <code>gds</code> build, precheck and gate-level test pass in CI.</p></div></li>
+        <li><div><h4>Submit to TTSKY26d</h4><p>Next: before 2026-11-30.</p></div></li>
+        <li><div><h4>Bring-up on silicon</h4><p>After fab: ID bytes <code>4E 22 10 01</code>, scan chain shift, matmuls against a Python reference, clock-gating current with rows on/off.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>&copy; <span data-year>2026</span> Khoi Nguyen</span>
+    <span><a href="../index.html#contact" style="text-decoration:none;">Get in touch &rarr;</a></span>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+<script src="../assets/npu/npu-3d.js"></script>
+</body>
+</html>

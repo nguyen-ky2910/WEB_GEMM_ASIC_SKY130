@@ -1,0 +1,1033 @@
+{
+  "sha": "eb8529822c826babe042158af7cd0c3a8f95a25a",
+  "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/eb8529822c826babe042158af7cd0c3a8f95a25a",
+  "tree": [
+    {
+      "path": ".gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "563fdacb45936b6887ee10ceb6ac3322d6f15e11",
+      "size": 963,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/563fdacb45936b6887ee10ceb6ac3322d6f15e11"
+    },
+    {
+      "path": "HUONGDAN.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a7143fedc8151d2043e038f2dc5d72ceeb655f0a",
+      "size": 28675,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/a7143fedc8151d2043e038f2dc5d72ceeb655f0a"
+    },
+    {
+      "path": "NHATKY.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9e4104905c73e7e6abfda5a656a32d8c99af8f47",
+      "size": 7670,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/9e4104905c73e7e6abfda5a656a32d8c99af8f47"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "47b36741f830f31590a18d8d8c29fc6df293678f",
+      "size": 4876,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/47b36741f830f31590a18d8d8c29fc6df293678f"
+    },
+    {
+      "path": "openlane",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f30070904e5f2742ee1d4a8f069dcbd6ba6cd866",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/f30070904e5f2742ee1d4a8f069dcbd6ba6cd866"
+    },
+    {
+      "path": "openlane/check_openlane_run.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "0d0ce3306468ff0a21ab1344d35db9ef45ef59e7",
+      "size": 6913,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/0d0ce3306468ff0a21ab1344d35db9ef45ef59e7"
+    },
+    {
+      "path": "openlane/designs",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "02d9930608b7ada248569510a923d722df65cde8",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/02d9930608b7ada248569510a923d722df65cde8"
+    },
+    {
+      "path": "openlane/designs/gemm_array",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "22c431a14570027193da90578a532c6d4f43adec",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/22c431a14570027193da90578a532c6d4f43adec"
+    },
+    {
+      "path": "openlane/designs/gemm_array/PE_row_bb.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7068a06afef75fe17178df184763ca634f2c40b7",
+      "size": 1038,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/7068a06afef75fe17178df184763ca634f2c40b7"
+    },
+    {
+      "path": "openlane/designs/gemm_array/array.sdc",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "01a43cdcb0d57a83c66c51e5dede5a6c2c0e7d2b",
+      "size": 2899,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/01a43cdcb0d57a83c66c51e5dede5a6c2c0e7d2b"
+    },
+    {
+      "path": "openlane/designs/gemm_array/config.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0b294bd1e701eeff75b334b119bd39ae3ed1f1a6",
+      "size": 4596,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/0b294bd1e701eeff75b334b119bd39ae3ed1f1a6"
+    },
+    {
+      "path": "openlane/designs/gemm_axi_shell",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2fde2f7f81ffa54e97c0f3744384be46fed60152",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/2fde2f7f81ffa54e97c0f3744384be46fed60152"
+    },
+    {
+      "path": "openlane/designs/gemm_axi_shell/config.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5acf240c2aef84bcbbb11f4720b311d032836ec9",
+      "size": 4256,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/5acf240c2aef84bcbbb11f4720b311d032836ec9"
+    },
+    {
+      "path": "openlane/designs/gemm_axi_shell/dlclkp_bb.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "34357e2a277ee399cf8672232e19160ce6c682fd",
+      "size": 745,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/34357e2a277ee399cf8672232e19160ce6c682fd"
+    },
+    {
+      "path": "openlane/designs/gemm_axi_shell/shell.sdc",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cef4abbfe468db659efef8d9f20816787c65fa09",
+      "size": 3243,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/cef4abbfe468db659efef8d9f20816787c65fa09"
+    },
+    {
+      "path": "openlane/designs/gemm_common.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7e96a342b2b2aa94abfb42d9128aebd083e0d2f6",
+      "size": 1142,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/7e96a342b2b2aa94abfb42d9128aebd083e0d2f6"
+    },
+    {
+      "path": "openlane/designs/gemm_core",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d7dcb79dd40f4278acc4b8481167cec5bf5bfdf3",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/d7dcb79dd40f4278acc4b8481167cec5bf5bfdf3"
+    },
+    {
+      "path": "openlane/designs/gemm_core/PE_row_bb.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7068a06afef75fe17178df184763ca634f2c40b7",
+      "size": 1038,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/7068a06afef75fe17178df184763ca634f2c40b7"
+    },
+    {
+      "path": "openlane/designs/gemm_core/ant_eco.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4676ab5b0a34fdbe1f2a02808f90022704314566",
+      "size": 8001,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/4676ab5b0a34fdbe1f2a02808f90022704314566"
+    },
+    {
+      "path": "openlane/designs/gemm_core/cfg_shift_mcp.sdc",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c794d1c258fc1ffbbc02df90b03f374918f5f749",
+      "size": 2013,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/c794d1c258fc1ffbbc02df90b03f374918f5f749"
+    },
+    {
+      "path": "openlane/designs/gemm_core/clk_latency_seed.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ea3db991a97fea157d91c6514e5b4b2bd3f67354",
+      "size": 292,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/ea3db991a97fea157d91c6514e5b4b2bd3f67354"
+    },
+    {
+      "path": "openlane/designs/gemm_core/config.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "206f0a00f9b089e6e359915787496dd1270d8557",
+      "size": 13339,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/206f0a00f9b089e6e359915787496dd1270d8557"
+    },
+    {
+      "path": "openlane/designs/gemm_core/core.sdc",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ab88b0729b88bb2f221e4d8dbd86efd3c87e4dfd",
+      "size": 3260,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/ab88b0729b88bb2f221e4d8dbd86efd3c87e4dfd"
+    },
+    {
+      "path": "openlane/designs/gemm_core/core_full.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b856485bbf59416c816aaecc5d4ab46db263015d",
+      "size": 1360,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/b856485bbf59416c816aaecc5d4ab46db263015d"
+    },
+    {
+      "path": "openlane/designs/gemm_core/grt_probe.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6501ede9d09d4860433bf97bdc5d43adb2aefb13",
+      "size": 3135,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/6501ede9d09d4860433bf97bdc5d43adb2aefb13"
+    },
+    {
+      "path": "openlane/designs/gemm_core/keep_rows_clear.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c8f0d7b38a1d08bf46e2fc18886b6df03a459210",
+      "size": 3979,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/c8f0d7b38a1d08bf46e2fc18886b6df03a459210"
+    },
+    {
+      "path": "openlane/designs/gemm_core/macro_antenna_lef.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1cfc1b0a9371261ffe265aba47b6705ecfcf95c8",
+      "size": 4533,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/1cfc1b0a9371261ffe265aba47b6705ecfcf95c8"
+    },
+    {
+      "path": "openlane/designs/gemm_core/macro_cross.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1826310a15be0eeaac9fdec2674733fd2daa537d",
+      "size": 10752,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/1826310a15be0eeaac9fdec2674733fd2daa537d"
+    },
+    {
+      "path": "openlane/designs/gemm_core/preflight.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "95597ea62e60595008fa1c83dd9a4d957085ad59",
+      "size": 838,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/95597ea62e60595008fa1c83dd9a4d957085ad59"
+    },
+    {
+      "path": "openlane/designs/gemm_core/resume.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3b28f57d1b332ca7a648b3a80b7d435787dce099",
+      "size": 9731,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/3b28f57d1b332ca7a648b3a80b7d435787dce099"
+    },
+    {
+      "path": "openlane/designs/gemm_core/route_signoff.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "02437920ed99fe794d3099e72650cae8115908c1",
+      "size": 20542,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/02437920ed99fe794d3099e72650cae8115908c1"
+    },
+    {
+      "path": "openlane/designs/gemm_core/sram_bb.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ecc791be1524d0e908895176350fbf062d6c25eb",
+      "size": 725,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/ecc791be1524d0e908895176350fbf062d6c25eb"
+    },
+    {
+      "path": "openlane/designs/gemm_ip",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f59f0a9101bcae5772bead69087ddfb9529e51a8",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/f59f0a9101bcae5772bead69087ddfb9529e51a8"
+    },
+    {
+      "path": "openlane/designs/gemm_ip/cfg_shift_mcp.sdc",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "607aff7fc337fd512f84fdbae79a26d7c9aff075",
+      "size": 1905,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/607aff7fc337fd512f84fdbae79a26d7c9aff075"
+    },
+    {
+      "path": "openlane/designs/gemm_ip/clk_latency_seed.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a6639f98e0282a9e4dc1777122692eb39d0d29be",
+      "size": 373,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/a6639f98e0282a9e4dc1777122692eb39d0d29be"
+    },
+    {
+      "path": "openlane/designs/gemm_ip/config.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e9f07d7691f0b42639b293f09b38bed3aa10f325",
+      "size": 3572,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/e9f07d7691f0b42639b293f09b38bed3aa10f325"
+    },
+    {
+      "path": "openlane/designs/gemm_ip/ip.sdc",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b7992ee4db79fe613c32f379c36545f72f901e13",
+      "size": 1191,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/b7992ee4db79fe613c32f379c36545f72f901e13"
+    },
+    {
+      "path": "openlane/designs/gemm_ip/ip_full.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "535946677fb2c05efef78abe7081b26d8b78f7d6",
+      "size": 1298,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/535946677fb2c05efef78abe7081b26d8b78f7d6"
+    },
+    {
+      "path": "openlane/designs/gemm_ip/ip_pre.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "182b2ba1ffeca041e7b246cf4973a13a1dcee3d7",
+      "size": 1513,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/182b2ba1ffeca041e7b246cf4973a13a1dcee3d7"
+    },
+    {
+      "path": "openlane/designs/gemm_ip/ip_resume.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "61dde614cace41f1a1983f332c0a24c1d55f0916",
+      "size": 10396,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/61dde614cace41f1a1983f332c0a24c1d55f0916"
+    },
+    {
+      "path": "openlane/designs/gemm_ip_shell",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ab41c921013e80e82f096aec2185d5f8bf6e911e",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/ab41c921013e80e82f096aec2185d5f8bf6e911e"
+    },
+    {
+      "path": "openlane/designs/gemm_ip_shell/ant_eco_max.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "51811f9699845ba5b036e0a4ddf6187ebe38e506",
+      "size": 828,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/51811f9699845ba5b036e0a4ddf6187ebe38e506"
+    },
+    {
+      "path": "openlane/designs/gemm_ip_shell/ant_seed.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6cdf54474cb5c65f3567ccdb2946660d981c266d",
+      "size": 3619,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/6cdf54474cb5c65f3567ccdb2946660d981c266d"
+    },
+    {
+      "path": "openlane/designs/gemm_ip_shell/config.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8bbf51881dbe61479b1a170c7b5b74046cb28e16",
+      "size": 4490,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/8bbf51881dbe61479b1a170c7b5b74046cb28e16"
+    },
+    {
+      "path": "openlane/designs/gemm_ip_shell/shell_full.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "30c5f027f853d63f68b15540067562191b217ad5",
+      "size": 2465,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/30c5f027f853d63f68b15540067562191b217ad5"
+    },
+    {
+      "path": "openlane/designs/gemm_pe",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4aabf6d084e005aae3434c9567a01787cfab0c2d",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/4aabf6d084e005aae3434c9567a01787cfab0c2d"
+    },
+    {
+      "path": "openlane/designs/gemm_pe/config.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0135f5b10e7f1202602adf61a89b9176599f1bba",
+      "size": 987,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/0135f5b10e7f1202602adf61a89b9176599f1bba"
+    },
+    {
+      "path": "openlane/designs/gemm_row",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "cdac15f134bf08fe819a9c47a56f2865419d38ef",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/cdac15f134bf08fe819a9c47a56f2865419d38ef"
+    },
+    {
+      "path": "openlane/designs/gemm_row/config.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a128319c52051d70d13dd84ec89287ace43b760a",
+      "size": 1736,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/a128319c52051d70d13dd84ec89287ace43b760a"
+    },
+    {
+      "path": "openlane/gen_axi_files.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "d21f501fd2dc2d4356ba686787b937bfd704249e",
+      "size": 4677,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/d21f501fd2dc2d4356ba686787b937bfd704249e"
+    },
+    {
+      "path": "openlane/gen_core_files.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "334717f5117920296f70eff1922ee9d84f705231",
+      "size": 22723,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/334717f5117920296f70eff1922ee9d84f705231"
+    },
+    {
+      "path": "openlane/gen_ip_files.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2c42fb8cedfcbc417c8c990de9d6e50ccb0f1b50",
+      "size": 27562,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/2c42fb8cedfcbc417c8c990de9d6e50ccb0f1b50"
+    },
+    {
+      "path": "openlane/gen_openlane_files.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "5c3508cf758ff4f2653a05de035d0bb339da4d9c",
+      "size": 11390,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/5c3508cf758ff4f2653a05de035d0bb339da4d9c"
+    },
+    {
+      "path": "openlane/install_into_openlane.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "9fddf3542022be084668f6e3e9d1c5a198bcd039",
+      "size": 2519,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/9fddf3542022be084668f6e3e9d1c5a198bcd039"
+    },
+    {
+      "path": "openlane/run_flow.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "fba4ac363b3b47ca70c32de15d05a26d861de6ff",
+      "size": 84090,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/fba4ac363b3b47ca70c32de15d05a26d861de6ff"
+    },
+    {
+      "path": "rtl_asic",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ab68b7cebce623a889d51c4a6e3fe94b8350d2d9",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/ab68b7cebce623a889d51c4a6e3fe94b8350d2d9"
+    },
+    {
+      "path": "rtl_asic/Buffer_feeder.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7173b4a63f329357da46d4f9ab5d5ea1916f3669",
+      "size": 14385,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/7173b4a63f329357da46d4f9ab5d5ea1916f3669"
+    },
+    {
+      "path": "rtl_asic/DelayLine.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7a03cfa3ee6d9cd27feb14f3f3ae1e25c08d7201",
+      "size": 1646,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/7a03cfa3ee6d9cd27feb14f3f3ae1e25c08d7201"
+    },
+    {
+      "path": "rtl_asic/FeatureSkew.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2ee8d7104ccafa53cbeee0b5805364e8b7a52142",
+      "size": 1381,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/2ee8d7104ccafa53cbeee0b5805364e8b7a52142"
+    },
+    {
+      "path": "rtl_asic/GEMM_core.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "93784956ad07d1a84f085a4b37b5d588ebc9c795",
+      "size": 10402,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/93784956ad07d1a84f085a4b37b5d588ebc9c795"
+    },
+    {
+      "path": "rtl_asic/Gemm_compute_core.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "976bdb9d16d9cee61323ae969c26d19bcdb075aa",
+      "size": 6006,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/976bdb9d16d9cee61323ae969c26d19bcdb075aa"
+    },
+    {
+      "path": "rtl_asic/In_buffer.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e99b8e0add506183e88d0ed21691e6cfcebc58a0",
+      "size": 11448,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/e99b8e0add506183e88d0ed21691e6cfcebc58a0"
+    },
+    {
+      "path": "rtl_asic/Out_buffer.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4044990c21c4e1efde2f703c14dd35fac331cb0c",
+      "size": 14168,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/4044990c21c4e1efde2f703c14dd35fac331cb0c"
+    },
+    {
+      "path": "rtl_asic/OutputDeskew.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "84133bce2c4d4444dd35f6f2b8e232dda4130798",
+      "size": 1265,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/84133bce2c4d4444dd35f6f2b8e232dda4130798"
+    },
+    {
+      "path": "rtl_asic/PE.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "10aaaf0e6ef6cf7a4e848e3341f769c2eed6f1d9",
+      "size": 4064,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/10aaaf0e6ef6cf7a4e848e3341f769c2eed6f1d9"
+    },
+    {
+      "path": "rtl_asic/PE_array.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "582a3c5fff5a1dc8f2bb3cba6a66c064a2a00601",
+      "size": 4239,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/582a3c5fff5a1dc8f2bb3cba6a66c064a2a00601"
+    },
+    {
+      "path": "rtl_asic/PE_row.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "40692bc5a774c658e5de51a8aef98eb2e59e0141",
+      "size": 3327,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/40692bc5a774c658e5de51a8aef98eb2e59e0141"
+    },
+    {
+      "path": "rtl_asic/ResetSync.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7b9f35c64a88334927cae05a9a82166f5903b499",
+      "size": 844,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/7b9f35c64a88334927cae05a9a82166f5903b499"
+    },
+    {
+      "path": "rtl_asic/Right_shifter.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eba164d09412d35cca2d0eea27b097f57e30c869",
+      "size": 2827,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/eba164d09412d35cca2d0eea27b097f57e30c869"
+    },
+    {
+      "path": "rtl_asic/Signed_adder.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9daba8b8ec441f74cf8fc1f48c7e0e2e9787042c",
+      "size": 1490,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/9daba8b8ec441f74cf8fc1f48c7e0e2e9787042c"
+    },
+    {
+      "path": "rtl_asic/axi",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e638f0c77acb5c2a711c541b50392497a0cb4a57",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/e638f0c77acb5c2a711c541b50392497a0cb4a57"
+    },
+    {
+      "path": "rtl_asic/axi/AxiLiteControlRegs.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4d651e84c6f7c76091fd9bdbd43550d5a05a8c18",
+      "size": 10667,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/4d651e84c6f7c76091fd9bdbd43550d5a05a8c18"
+    },
+    {
+      "path": "rtl_asic/axi/AxisClockGate.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7af517f17fd03b86443dde132f067b4f788d79c1",
+      "size": 1620,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/7af517f17fd03b86443dde132f067b4f788d79c1"
+    },
+    {
+      "path": "rtl_asic/axi/AxisFwdSlice.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cf91c36f2488c1ef1d4421b57b945205303a3c78",
+      "size": 3467,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/cf91c36f2488c1ef1d4421b57b945205303a3c78"
+    },
+    {
+      "path": "rtl_asic/axi/AxisSkidBuffer.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "90fa6a0a7122305a4c3627fbed978ee87b25e9d6",
+      "size": 5383,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/90fa6a0a7122305a4c3627fbed978ee87b25e9d6"
+    },
+    {
+      "path": "rtl_asic/axi/GEMM_top.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d70fa83bac7ebbc527a13a38e4873be28a458f94",
+      "size": 10171,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/d70fa83bac7ebbc527a13a38e4873be28a458f94"
+    },
+    {
+      "path": "rtl_asic/axi/GemmAxiShell.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1ef22e643dade652ea7f62260d2e66bb0be7dc95",
+      "size": 17920,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/1ef22e643dade652ea7f62260d2e66bb0be7dc95"
+    },
+    {
+      "path": "rtl_asic/gemm_asic_cfg.vh",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "012901d51d357e09cbebfea86f780b436aa68a9c",
+      "size": 3169,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/012901d51d357e09cbebfea86f780b436aa68a9c"
+    },
+    {
+      "path": "rtl_asic/sram_1r1w.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "da508d58abbc2c2fac99cd2e7e4ec20689e01626",
+      "size": 4445,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/da508d58abbc2c2fac99cd2e7e4ec20689e01626"
+    },
+    {
+      "path": "sim",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3012c05428d0a9a0283a548d0c70d0f4811b6f36",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/3012c05428d0a9a0283a548d0c70d0f4811b6f36"
+    },
+    {
+      "path": "sim/Right_shifter_ref.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2a87adb9b5b9bbf322017f82c18fff5d0bc9b43f",
+      "size": 1950,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/2a87adb9b5b9bbf322017f82c18fff5d0bc9b43f"
+    },
+    {
+      "path": "sim/core_sim_quick.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "6924f082af84874c1bb5ccf42b9b4577e0753d6b",
+      "size": 2156,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/6924f082af84874c1bb5ccf42b9b4577e0753d6b"
+    },
+    {
+      "path": "sim/lint.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "9b9d4fde7cecfe1e16b00fb71d0b2353f75fdd34",
+      "size": 2212,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/9b9d4fde7cecfe1e16b00fb71d0b2353f75fdd34"
+    },
+    {
+      "path": "sim/mult_IP_model.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e65292089417df2f59e5e91e24d65a0f0b519251",
+      "size": 417,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/e65292089417df2f59e5e91e24d65a0f0b519251"
+    },
+    {
+      "path": "sim/row_equiv.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "77a8babda68055e9c37f292c4de4b156d03c1fcf",
+      "size": 1691,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/77a8babda68055e9c37f292c4de4b156d03c1fcf"
+    },
+    {
+      "path": "sim/run_axi.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "5e9e7515233cfb04eb2c74d8d3096e984186f822",
+      "size": 7597,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/5e9e7515233cfb04eb2c74d8d3096e984186f822"
+    },
+    {
+      "path": "sim/run_equiv.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "0f7cc0c19bc8570e0449bdc98c993e679e4f4d5f",
+      "size": 1830,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/0f7cc0c19bc8570e0449bdc98c993e679e4f4d5f"
+    },
+    {
+      "path": "sim/run_gls.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "3655bc6e90bf3f2d9a60694b60c3b409a1dd5f37",
+      "size": 7600,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/3655bc6e90bf3f2d9a60694b60c3b409a1dd5f37"
+    },
+    {
+      "path": "sim/run_ip_gls.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "802c526d0ff5d19dd335e2332dd639c3fdab73fa",
+      "size": 5321,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/802c526d0ff5d19dd335e2332dd639c3fdab73fa"
+    },
+    {
+      "path": "sim/run_rs_equiv.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "c52649212876e513e7a3b8f7683cc3361f42a182",
+      "size": 1350,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/c52649212876e513e7a3b8f7683cc3361f42a182"
+    },
+    {
+      "path": "sim/run_system.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "c3c718de0922ed794bb20a9312adaa5d2bde05bd",
+      "size": 9469,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/c3c718de0922ed794bb20a9312adaa5d2bde05bd"
+    },
+    {
+      "path": "sim/tb_axi_shell.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d4bab397155a8f62cb4baebebf54ca95c2897e41",
+      "size": 16573,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/d4bab397155a8f62cb4baebebf54ca95c2897e41"
+    },
+    {
+      "path": "sim/tb_axis_skid.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "159f9b5c7defd7af383a0ae4edc46dea57dc5c09",
+      "size": 7535,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/159f9b5c7defd7af383a0ae4edc46dea57dc5c09"
+    },
+    {
+      "path": "sim/tb_compute_core_equiv.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "42d4253717eb798fe058d418a649f3b157993c7f",
+      "size": 5303,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/42d4253717eb798fe058d418a649f3b157993c7f"
+    },
+    {
+      "path": "sim/tb_right_shifter_equiv.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "366e1a29fb041849feb1004360c9b78bf033006d",
+      "size": 2234,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/366e1a29fb041849feb1004360c9b78bf033006d"
+    },
+    {
+      "path": "sim/tb_row_equiv.v",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f91a0c72da48cf62f97ea824738318cd8e4a76f2",
+      "size": 2349,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/f91a0c72da48cf62f97ea824738318cd8e4a76f2"
+    },
+    {
+      "path": "tools",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "5293c8192eb8f3325c7c1abf8281183cebaba073",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/5293c8192eb8f3325c7c1abf8281183cebaba073"
+    },
+    {
+      "path": "tools/antenna_breakdown.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f88b6f1cc43da0ce48fe7706499c6257989b3bab",
+      "size": 25559,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/f88b6f1cc43da0ce48fe7706499c6257989b3bab"
+    },
+    {
+      "path": "tools/antenna_nets.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "975a89debd8b38a740afb5e45ac8ed65ec8da8da",
+      "size": 8342,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/975a89debd8b38a740afb5e45ac8ed65ec8da8da"
+    },
+    {
+      "path": "tools/axi_overhead.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "ecf785d3bfda08f256d2fcf9871d0f3cc7f56e0b",
+      "size": 15104,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/ecf785d3bfda08f256d2fcf9871d0f3cc7f56e0b"
+    },
+    {
+      "path": "tools/axi_shell_power.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "ad1aadf86bf55c22baeef64a1244d7c81f3e6a69",
+      "size": 5969,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/ad1aadf86bf55c22baeef64a1244d7c81f3e6a69"
+    },
+    {
+      "path": "tools/check_row_lef.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "d14583a2e8f393307e704ffb40773af4c28b4606",
+      "size": 3427,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/d14583a2e8f393307e704ffb40773af4c28b4606"
+    },
+    {
+      "path": "tools/clock_latency.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d271138ca87f6d1caea90675db0a329f910efb91",
+      "size": 4570,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/d271138ca87f6d1caea90675db0a329f910efb91"
+    },
+    {
+      "path": "tools/clock_layers.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "48bcf9ff38968cfd687cf11e87b638d432560f64",
+      "size": 2115,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/48bcf9ff38968cfd687cf11e87b638d432560f64"
+    },
+    {
+      "path": "tools/congestion_map.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "e30eef893f10bc30ae88ed0edd0a5f0d8e363428",
+      "size": 2171,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/e30eef893f10bc30ae88ed0edd0a5f0d8e363428"
+    },
+    {
+      "path": "tools/core_channels.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d81f5114a799d91948ee5f4fa284a9c5a3db5a3e",
+      "size": 9867,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/d81f5114a799d91948ee5f4fa284a9c5a3db5a3e"
+    },
+    {
+      "path": "tools/core_congestion.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "07892e6baf6b5abb16f719b24b54728955a6e6f0",
+      "size": 12799,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/07892e6baf6b5abb16f719b24b54728955a6e6f0"
+    },
+    {
+      "path": "tools/core_placement.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "48dd9ab2dcd7bb27fca6e1e9ae12190e3b39e03e",
+      "size": 5123,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/48dd9ab2dcd7bb27fca6e1e9ae12190e3b39e03e"
+    },
+    {
+      "path": "tools/core_triage.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "692baf0ae42b0b793bd7b4fd6755b3d30f9fa6a9",
+      "size": 8690,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/692baf0ae42b0b793bd7b4fd6755b3d30f9fa6a9"
+    },
+    {
+      "path": "tools/core_watch.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "b9dd78b13d087481a9d363f1b4085c2088f24668",
+      "size": 2389,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/b9dd78b13d087481a9d363f1b4085c2088f24668"
+    },
+    {
+      "path": "tools/def_window.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4df2bd01d4633dbf00e62791f008ed667912a5eb",
+      "size": 9504,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/4df2bd01d4633dbf00e62791f008ed667912a5eb"
+    },
+    {
+      "path": "tools/lef_antenna_pins.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "679c4530a2b19f3ed5433113ae4b14760b1bf451",
+      "size": 2389,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/679c4530a2b19f3ed5433113ae4b14760b1bf451"
+    },
+    {
+      "path": "tools/macro_place_check.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c80bf8702324bd940146e88a028d3b62ab84f2e3",
+      "size": 3847,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/c80bf8702324bd940146e88a028d3b62ab84f2e3"
+    },
+    {
+      "path": "tools/magic_macro_check.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1674bd51702b7902a9957c3d9486014c11b0f882",
+      "size": 10288,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/1674bd51702b7902a9957c3d9486014c11b0f882"
+    },
+    {
+      "path": "tools/magic_macro_check.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "06af3cdad35058394fa9b6cd5e94525cb185480b",
+      "size": 3546,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/06af3cdad35058394fa9b6cd5e94525cb185480b"
+    },
+    {
+      "path": "tools/magic_macro_check.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f0ecebc4891a62a31a842c9ae8ca591e1bdbfc3f",
+      "size": 878,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/f0ecebc4891a62a31a842c9ae8ca591e1bdbfc3f"
+    },
+    {
+      "path": "tools/magic_macro_check_clip.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b6c4ed73e6333700fa3a667f339cb0be03e4e025",
+      "size": 874,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/b6c4ed73e6333700fa3a667f339cb0be03e4e025"
+    },
+    {
+      "path": "tools/patch_software_depths.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "674052a7a057a9e38921fdda80d854a8839ac342",
+      "size": 3255,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/674052a7a057a9e38921fdda80d854a8839ac342"
+    },
+    {
+      "path": "tools/placement_map.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9fe259e18a414437fa340874a61676eef1266393",
+      "size": 2866,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/9fe259e18a414437fa340874a61676eef1266393"
+    },
+    {
+      "path": "tools/power.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "ef3c06982d720b8b49a65b7240873629f04132d0",
+      "size": 3718,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/ef3c06982d720b8b49a65b7240873629f04132d0"
+    },
+    {
+      "path": "tools/power",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "01d22a1bc9b4152b71e2849a65df1b7b3635e354",
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/trees/01d22a1bc9b4152b71e2849a65df1b7b3635e354"
+    },
+    {
+      "path": "tools/power/power.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f1ac9aac1f0730a983f5734b62bd7c2f4bc43408",
+      "size": 2666,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/f1ac9aac1f0730a983f5734b62bd7c2f4bc43408"
+    },
+    {
+      "path": "tools/power/power_groups.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "768fa583715fbffe2f4d362aca3cd9ce0e2b5b65",
+      "size": 1545,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/768fa583715fbffe2f4d362aca3cd9ce0e2b5b65"
+    },
+    {
+      "path": "tools/power/shell_power.tcl",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7bd6dde7ba675f439ca7327d803f18a349d15835",
+      "size": 2707,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/7bd6dde7ba675f439ca7327d803f18a349d15835"
+    },
+    {
+      "path": "tools/power/vcd2act.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9be06a7c960f763162181bb8fe8d3fec0f4afb4e",
+      "size": 4786,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/9be06a7c960f763162181bb8fe8d3fec0f4afb4e"
+    },
+    {
+      "path": "tools/power/vcd2act_flat.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5e3e8b696fe2b7df943e1feaaa3c8f6ba667787a",
+      "size": 4479,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/5e3e8b696fe2b7df943e1feaaa3c8f6ba667787a"
+    },
+    {
+      "path": "tools/power/vcd_window.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a73a7feb1c7958f75272ce3173ad18dbec4b7045",
+      "size": 1019,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/a73a7feb1c7958f75272ce3173ad18dbec4b7045"
+    },
+    {
+      "path": "tools/sta_corners.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "3ea9b424f7653fc1c7e5a448192493578e2aa9bd",
+      "size": 1689,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/3ea9b424f7653fc1c7e5a448192493578e2aa9bd"
+    },
+    {
+      "path": "tools/sta_summary.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "de844af158363d88a6783198d074ce66e20daeac",
+      "size": 3801,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/de844af158363d88a6783198d074ce66e20daeac"
+    },
+    {
+      "path": "tools/timing_summary.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "29bdc67adfc6b00035a80e67e7678549a4326272",
+      "size": 2345,
+      "url": "https://api.github.com/repos/HoangNhan2412-ICD/GEMM32-ASIC-sky130/git/blobs/29bdc67adfc6b00035a80e67e7678549a4326272"
+    }
+  ],
+  "truncated": false
+}

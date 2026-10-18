@@ -1,0 +1,652 @@
+BÁO CÁO TOÀN DIỆN DỰ ÁNGEMM32-ASIC-sky130
+Hierarchical OpenLane Flow + AXI Accelerator IP
+Phân tích cấu trúc - flow - kết quả - đóng góp - hạn chế - hướng khắc phục - mức sẵn sàng dự thi
+Repository: HoangNhan2412-ICD/GEMM32-ASIC-sky130
+Branch được phân tích: hierarchical-openlane-flowHead commit: 2b55588235b7bad85a22d3d4424301fe92666a5cThời điểm commit: 10/10/2026
+Kết luận nhanh: Core GEMM core_v11 đã có GDS sạch về detailed-route/LVS và đã vượt gate-level simulation với row gate-level. Lớp AXI mới cũng đã được kiểm thử RTL, harden riêng, đo area/timing/power và GLS khi bọc core_v11. Tuy nhiên GDS tích hợp phẳng cuối cùng của toàn bộ GEMM_top = AXI shell + GEMM core chưa được chạy; vì vậy dự án rất mạnh để nộp ở mức nghiên cứu/IP prototype, nhưng chưa nên tuyên bố là AXI ASIC IP hoàn chỉnh hoặc tapeout-ready.
+
+
+1. Tổng quan dự án
+Dự án triển khai một bộ tăng tốc nhân ma trận GEMM INT8 32×32 theo kiến trúc weight-stationary. Thiết kế gốc chạy trên FPGA KV260; repository này chuyển thiết kế sang ASIC SKY130 bằng OpenLane 1.0.2, harden theo phân cấp và sau đó bổ sung lớp AXI để biến compute core thành một accelerator IP có giao tiếp chuẩn.
+FPGA KV260 RTL      │      ▼ASIC-compatible RTL      │      ├── PE      ├── Row = 32 PE      ├── Array = 32 Row + skew/deskew      └── Core = 32 Row macros + 80 SRAM macros                │                ▼           core_v11 GDS                │                ▼        AXI Accelerator IP   AXI4-Lite + 3 × AXI4-Stream                │        [full integrated GDS]            CHƯA CHẠY
+Thuộc tính
+Giá trị
+Kiến trúc compute
+32×32 systolic array, weight-stationary, INT8
+Số PE
+1024 PE
+Clock mục tiêu
+100 MHz ở typical corner
+PDK
+sky130A
+Flow
+OpenLane 1.0.2, hierarchical hardening
+Core cuối đã chạy
+core_v11
+AXI IP
+AXI4-Lite control + feature/weight/result AXI4-Stream 256 bit
+Trạng thái AXI
+RTL/GLS + shell P&R đã làm; full GEMM_top GDS chưa làm
+
+2. Môi trường phát triển và toolchain
+Hạng mục
+Thông tin repo xác nhận
+Hệ điều hành
+Linux. Repository không nêu distribution cụ thể, vì vậy không nên ghi Ubuntu/AlmaLinux nếu không có bằng chứng khác.
+RAM máy build
+15,5 GB RAM + 32 GB swap; khuyến nghị 16 GB RAM
+Dung lượng cho core run
+Nên có ≥40 GB trống; một run hoàn tất khoảng 20-25 GB
+Docker
+Docker 29.8.2 trên máy build
+OpenLane
+v1.0.2, commit ff5509f65b17bfa4068d5336495ab1718987ff69
+PDK
+sky130A, hash 0fe599b2afb6708d281543108caf8310912f54af
+Icarus Verilog
+13.0
+Python
+3.12
+KLayout
+0.28.2 trong image OpenLane khi cần xem GDS
+
+Lưu ý: Repo chỉ nói “Linux”; tên distribution cụ thể không được ghi. Báo cáo này không tự suy đoán distribution.
+
+3. Cấu trúc repository và ý nghĩa từng phần
+GEMM32-ASIC-sky130/├── README.md              Tổng quan + kết quả chính├── HUONGDAN.md            Manual chạy, đọc kết quả, AXI section├── NHATKY.md              Lịch sử từng run và lỗi đã giải quyết├── rtl_asic/               RTL ASIC của GEMM core│   └── axi/                Wrapper AXI accelerator IP├── sim/                    RTL sim, equivalence, GLS, AXI tests├── openlane/               Flow OpenLane + config theo tầng│   └── designs/│       ├── gemm_pe/│       ├── gemm_row/│       ├── gemm_array/│       ├── gemm_core/│       └── gemm_axi_shell/└── tools/                  Timing, congestion, antenna, power, AXI overhead
+Nhóm
+Vai trò
+README.md
+Giải thích mục tiêu, số liệu core_v11, cách chạy và hạn chế.
+HUONGDAN.md
+Tài liệu vận hành chi tiết; có phần AXI mới và bảng overhead 10/10/2026.
+NHATKY.md
+Ghi lịch sử v1→v11, nguyên nhân lỗi và quyết định kỹ thuật.
+rtl_asic/
+Kiến trúc GEMM dùng cho ASIC.
+rtl_asic/axi/
+AXI4-Lite register file, stream slices, clock gating, GEMM_top.
+sim/
+Chứng minh functional correctness và equivalence.
+openlane/
+Synthesis→floorplan→placement→CTS→route→signoff.
+tools/
+Bộ công cụ tự viết để phân tích log/layout/power/timing.
+
+4. Kiến trúc GEMM core
+GemmAccelerator│├── InputBuffer│   ├── feature memory│   └── weight memory│├── BufferFeeder│   ├── feature tile memory│   ├── weight tile memory│   └── GemmComputeCore│       └── ProcessingElementArray│           ├── FeatureSkew│           ├── 32 × ProcessingElementRow│           │     └── 32 × PE / row│           └── OutputDeskew│└── OutputBuffer    └── accumulation / quantization / output memory
+Array size: 32×32 = 1024 PE.
+Data width: INT8 (8 bit).
+Partial sum/accumulation sử dụng độ rộng lớn hơn bên trong; output stream của top vẫn 256 bit = 32 lane × 8 bit.
+Datapath reset có thể tắt trên các flop thuần dữ liệu (`GEMM_DP_RESET=0`) để giảm resettable flops từ khoảng 92k xuống khoảng 16k; equivalence test kiểm tra valid output không đổi.
+Core ASIC bỏ cấu trúc weight buffer/bus cực rộng của FPGA và tổ chức weight theo hướng phù hợp hơn cho physical implementation.
+5. SRAM, buffer và cách ánh xạ 80 hard macros
+Hard SRAM dùng macro `sky130_sram_2kbyte_1rw1r_32x512_8`. Một macro có 512 word × 32 bit = 16.384 bit = 2 KiB. Script floorplan ghi kích thước vật lý 683,1 × 416,54 µm.
+Thông số SRAM
+Giá trị
+Tên macro
+sky130_sram_2kbyte_1rw1r_32x512_8
+Tổ chức logic
+512 word × 32 bit
+Dung lượng
+2 KiB / macro
+Port
+1 cổng Read/Write + 1 cổng Read; wrapper project dùng port0 để ghi và port1 để đọc
+_8 cuối tên
+write granularity 8 bit; project đặt wmask=1111 nên ghi đủ 32 bit
+Kích thước LEF
+683,1 × 416,54 µm
+Số macro
+80
+Tổng hard-SRAM capacity
+160 KiB
+
+Buffer logic
+Kích thước
+Ghép width
+Ghép depth
+SRAM cho 1 khối
+Weight
+1024 × 256 bit
+256/32 = 8 lanes
+1024/512 = 2 banks
+16
+Feature
+512 × 256 bit
+256/32 = 8 lanes
+1 bank
+8
+Output
+512 × 1024 bit
+1024/32 = 32 lanes
+1 bank
+32
+
+InputBuffer:    Weight 16 + Feature 8 = 24 SRAMBufferFeeder:   Weight 16 + Feature 8 = 24 SRAMOutputBuffer:   Output 32              = 32 SRAM                                      --------TOTAL                                  80 SRAM
+Routing SRAM: Macro SRAM block routing met1-met4. Sau các lần debug, project còn chủ động cấm signal routing trên met5 phía trên SRAM để tránh loại short hình học lặp lại; vì vậy floorplan phải chừa channel/gap cho dây đi vòng qua macro.
+
+6. Hierarchical ASIC flow từ đầu đến GDS
+RTL/Equivalence    ↓PE hardening    ↓Row hardening (32 PE)    ↓Array rehearsal (32 row macros)    ↓Core RTL + OpenRAM simulation    ↓Core synthesis + floorplan    ↓Macro placement (32 row + 80 SRAM)    ↓PDN → Placement → CTS → Global Route → Detailed Route    ↓DRC / LVS / STA / Antenna / Power    ↓Gate-level simulation    ↓core_v11 GDS
+Stage
+Ý nghĩa
+Kết quả repo
+sim
+ASIC RTL so với FPGA RTL
+PASS
+pe
+Harden 1 PE để đo area/timing
+PASS, ~6604 µm²
+row
+32 PE thành hard macro
+PASS, ~3517,6 × 133,3 µm; row_equiv PASS
+array
+FeatureSkew + 32 row + OutputDeskew
+PASS sau nhiều vòng floorplan/routing
+core-sim
+Core + OpenRAM behavioral model
+PASS 3 shapes
+core-pre
+Lint/synth/floorplan; kiểm 80 SRAM + 32 row
+PASS
+core
+Full physical design
+core_v11 hoàn tất
+core-gls
+Final core netlist + row gate-level
+PASS 3 matrix shapes
+
+7. Các vấn đề lớn đã gặp và cách giải quyết
+Vấn đề
+Biểu hiện
+Giải pháp / bài học
+SRAM cluster gây nghẽn
+core_v1 global route crash; core_v1r ~390k gcell overflow
+Đặt SRAM gần logic tiêu thụ; floorplan locality-aware.
+Synthesis buffering làm dây dài
+core_v4 trước đó overflow rất cao
+Tắt SYNTH_BUFFERING để placement/resizer tạo buffer tree sau khi biết vị trí.
+Cell kẹt giữa row macros
+~9,5k DRT shorts
+`keep_rows_clear.tcl` đẩy cell ra khỏi channel không route được.
+Short met5 lặp lại qua nhiều seed
+core_v6/v6r cùng một short
+Xác định là lỗi hình học, không phải seed; cấm met5 routing trên SRAM.
+RightShifter critical path
+setup âm
+Viết lại RightShifter, bỏ adder 32-bit khỏi đường dữ liệu chính.
+Net xuyên SRAM
+DRT không thể sửa
+`macro_cross.py` dừng sớm sau global route nếu net xuyên macro >50 µm.
+Heuristic diode gây congestion
+overflow tăng, net xuyên macro
+Tắt heuristic diode ở core; dùng repair + antenna ECO có kiểm soát.
+SRAM LEF thiếu antenna data
+tool không thấy gate sau pin SRAM
+Bổ sung ANTENNAGATEAREA / ANTENNADIFFAREA vào LEF.
+Magic false DRC quanh abstract macro
+cờ met4/met2 quanh macro
+`magic_macro_check.sh` kiểm lại bằng full GDS để phân biệt lỗi thật/giả.
+Resizer đổi pin làm sai chức năng
+core_v9/v10 sai cột 23 dù LVS match
+`-skip_pin_swap` + `row_equiv.sh`; chạy lại row và core thành core_v11.
+Run dài, RAM/ổ đĩa
+OOM hoặc hết disk
+core-status/core-triage, swap, disk precheck, resume/core-route.
+
+8. Thành công của core_v11
+Metric
+core_v11
+Đánh giá
+Die
+7,06 × 10,24 mm = 72,3 mm²
+Lớn nhưng đã route được với 112 hard macros tổng (32 row + 80 SRAM).
+DRT
+0 lỗi
+Rất tốt; detailed routing sạch.
+Magic DRC
+48 cờ abstract, 0 lỗi thật sau full-layout check
+Chấp nhận được nếu trình bày rõ phương pháp xác minh.
+LVS
+Match
+Layout khớp netlist cuối.
+Timing TT 100 MHz
+Setup +1,21 ns; Hold +0,27 ns
+Đạt target ở typical.
+Hold fast corner
+Clean ở RC min và RC max
+Cải thiện so với core_v9.
+Slow corner
+Setup -7,61 ns RCmax; khoảng 57 MHz
+Chưa đạt 100 MHz mọi PVT.
+Antenna
+219 pin / 205 net
+Chưa signoff-clean.
+GLS
+PASS 64×64×64, 8×32×544, 16×992×32
+Mạnh: row gate-level thật, lỗi cột 23 đã biến mất.
+Power VCD
+1,53 W @ TT/25°C/1,8V/100MHz
+Có activity thực nghiệm; vẫn có hạn chế model SRAM/glitch.
+Power vectorless
+2,89 W
+Giá trị bảo thủ hơn.
+Peak throughput
+204,8 GOPS
+Theo 2×32×32×100MHz.
+Energy efficiency
+134 GOPS/W
+Tính theo 1,53 W.
+Area efficiency
+2,83 GOPS/mm²
+Theo die 72,3 mm².
+
+Điểm mạnh đặc biệt: Project không dừng ở “có GDS”. Nó đã phát hiện một functional bug mà DRC/LVS không bắt được, sau đó bổ sung gate-level equivalence ở tầng row và chạy lại core. Đây là một đóng góp engineering rất đáng giá khi trình bày với giám khảo.
+
+9. Phiên bản cải tiến: AXI Accelerator IP
+Branch hiện tại đã đi xa hơn core_v11: thêm `GEMM_top` để bọc compute core bằng giao tiếp chuẩn, nhưng vẫn giữ `GemmAccelerator` không đổi.
+                           GEMM_top┌─────────────────────────────────────────────────────┐│ GemmAxiShell                                        ││  ├── ResetSync                                      ││  ├── AXI4-Lite register file                        ││  ├── busy / done / irq / error / cycle counter     ││  ├── Feature AXI4-Stream slave 256b                 ││  ├── Weight  AXI4-Stream slave 256b                 ││  └── Result  AXI4-Stream master 256b                ││                    │                                 ││                    ▼                                 ││             GemmAccelerator                         ││                 core_v11                            │└─────────────────────────────────────────────────────┘
+AXI4-Lite data width 32 bit; IP address width 6 bit.
+Ba AXI4-Stream 256 bit: feature input, weight input, result output.
+Giữ tương thích register 0x00-0x0C với KV260 driver/testbench.
+Thêm interrupt `irq`, error/status, cycle counter, IP ID và version.
+Reset ngoài `S_AXI_ARESETN` được đưa qua 2-stage ResetSync trước khi dùng cho shell/core.
+Không dùng Xilinx IP bên trong ASIC wrapper; stream slices và clock gating được viết RTL/sử dụng standard cell SKY130.
+10. AXI4-Lite register map
+Địa chỉ
+Tên
+Kiểu
+Ý nghĩa
+0x00
+SHIFT / STATUS
+RW
+Ghi shift[9:0], clear done bit16; đọc shift + busy/done/idle/clear status.
+0x04
+ROW_COUNT
+RW
+Số hàng / F_length [8:0].
+0x08
+K_BLOCKS
+RW
+Số khối K [4:0].
+0x0C
+N_BLOCKS
+RW
+Số khối N [4:0].
+0x10
+IRQ_ENABLE
+RW
+Enable IRQ job done / error.
+0x14
+IRQ_STATUS
+R/W1C
+Sticky status; ghi 1 để clear.
+0x18
+ERROR
+R/W1C
+Feature/weight partial TSTRB hoặc clear-done bị từ chối khi busy.
+0x1C
+JOB_CYCLES
+RO
+Chu kỳ từ input beat đầu tiên đến final result beat.
+0x20
+IP_ID
+RO
+0x47454D4D = “GEMM”.
+0x24
+IP_VERSION
+RO
+Major/minor + array size + data width.
+
+11. Ba phương án AXI-Stream và lựa chọn cuối
+Biến thể
+Feature/Weight input
+Result output
+Đặc điểm
+thin
+Wire-through
+Wire-through
+Ít logic nhất; timing cổng bằng timing core.
+reg
+2-entry AxisSkidBuffer
+2-entry AxisSkidBuffer
+Mọi AXIS port registered; nhiều flop nhất.
+lean
+1-entry AxisFwdSlice
+2-entry AxisSkidBuffer
+Giảm ~1/3 flop so với reg; input TREADY còn 1 logic stage.
+
+Mặc định hiện tại: GEMM_AXIS_REG=2 và GEMM_AXIS_CG=1, tức lean + clock gating. Dãy data flop của slice chỉ nhận clock khi load beat; synthesis dùng integrated clock-gating cell `sky130_fd_sc_hd__dlclkp_1`.
+
+12. Kết quả kiểm thử và physical measurement của AXI
+`axi-sim`: test AxisSkidBuffer / AxisFwdSlice với valid-ready ngẫu nhiên, backpressure, burst, clock gating; test shell register map/IRQ/error/cycle counter; test GEMM_top với testbench KV260.
+Test ngẫu nhiên stream slice lên tới 80.000 beat để kiểm mất dữ liệu, lặp dữ liệu và thứ tự.
+Thin cho kết quả đúng cùng cycle với RTL KV260; reg/lean giữ đúng chuỗi kết quả nhưng thêm vài cycle latency.
+`axi-gls`: bản lean + clock gating bọc netlist cuối của core_v11, row gate-level, OVERALL PASS.
+`axi-shell`: harden riêng shell cho thin/reg/lean/lean_cg để đo overhead; các run DRC/LVS sạch.
+Metric shell
+thin
+reg
+lean
+lean_cg
+Cell sau synth
+1.366
+6.297
+4.114
+2.201
+Flop
+123
+1.676
+1.158
+1.158
+Std-cell area
+10.372 µm²
+72.708 µm²
+47.632 µm²
+32.765 µm²
+Area overhead vs core
+0,14%
+0,95%
+0,62%
+0,43%
+Placed area / die core
+0,07%
+0,22%
+0,17%
+0,14%
+Setup internal Slowest
++5,31 ns
++0,95 ns
++0,40 ns
++3,01 ns
+Hold internal Typical
++0,36 ns
++0,30 ns
++0,30 ns
++0,31 ns
+Vectorless power
+3,86 mW
+44,4 mW
+32,7 mW
+6,91 mW
+VCD whole TB
+1,79 mW
+14,3 mW
+9,87 mW
+3,02 mW
+Latency vs KV260
+0
++1..3
++1..3
++1..4
+Antenna pins còn lại
+6
+56
+38
+12
+
+Ý nghĩa của lean_cg: So với lean, clock gating giảm std-cell area từ 47.632 xuống 32.765 µm² (do bỏ mux enable trước data flops) và VCD power toàn testbench từ 9,87 xuống 3,02 mW. Tuy nhiên repo cũng ghi rõ OpenSTA có hạn chế khi ước lượng power trong cửa sổ các gated clock đứng yên, nên một số số liệu gated power là cận trên chứ không phải phép đo tuyệt đối.
+
+13. Phần chưa làm / chưa hoàn thiện
+Hạng mục
+Trạng thái
+Tại sao quan trọng
+Full flat GEMM_top GDS
+CHƯA LÀM
+Hiện core GDS và AXI shell P&R là hai khối riêng; chưa có một GDS tích hợp cuối của toàn IP.
+Timing shell↔core thật
+CHƯA CÓ
+Shell harden riêng nên clock tree không cân chung với core; path interface chưa được signoff trong một top thống nhất.
+Antenna = 0
+CHƯA
+core_v11 còn 205 net; selected lean_cg shell còn 12 pin.
+100 MHz mọi PVT
+CHƯA
+Slow corner chỉ khoảng 57 MHz.
+Pad ring / ESD / package
+CHƯA
+Repo xác nhận core chưa có vòng pad; đây chưa phải full chip.
+Full-chip I/O timing
+CHƯA
+Core hiện waive I/O timing; integrated AXI top cần timing budget thật.
+Smart-city end application/demo
+KHÔNG THẤY TRONG REPO
+Repo tập trung accelerator/IP; chưa có bằng chứng về một use-case đô thị thông minh cụ thể.
+Tapeout-ready signoff
+CHƯA
+Antenna, full top, pad/ESD và PVT target còn mở.
+
+14. Đóng góp kỹ thuật nổi bật
+Các điểm dưới đây là đánh giá từ cấu trúc và lịch sử repository, không phải tuyên bố học thuật thay cho tác giả:
+Chuyển một GEMM accelerator 32×32 từ môi trường FPGA sang ASIC SKY130 có hard SRAM thật và đạt core GDS.
+Xây dựng hierarchical OpenLane flow có khả năng tái lập: PE → row → array → core.
+Thiết kế floorplan locality-aware cho 80 SRAM + 32 row macros, dựa trên dữ liệu congestion thực tế thay vì chỉ đổi seed.
+Tự phát triển công cụ chẩn đoán congestion, macro crossing, timing, antenna, DRC false-positive và power.
+Phát hiện và sửa lỗi logic do OpenROAD pin-swap mà LVS không thể phát hiện; thêm gate-level equivalence để ngăn tái diễn.
+Bổ sung AXI-compatible IP shell nhưng giữ compute core nguyên vẹn, hỗ trợ tương thích driver/testbench KV260.
+So sánh định lượng nhiều kiến trúc stream wrapper và chọn lean + clock gating dựa trên area/timing/power thực nghiệm.
+Đưa power/efficiency thành metric có thể so sánh: 204,8 GOPS, 134 GOPS/W ở VCD estimate, và overhead AXI dưới 1% area.
+15. Hạn chế và hướng khắc phục ưu tiên
+Hạn chế
+Hướng khắc phục thực tế
+Ưu tiên
+Chưa có full AXI GDS
+Tạo design riêng `gemm_axi`, top = GEMM_top; cập nhật macro names/pin order/SDC/scripts rồi chạy full flat P&R.
+RẤT CAO
+Antenna core còn 205 net
+Tối ưu diode/route/ECO trong full top; xem xét newer OpenROAD/flow có antenna-aware routing tốt hơn; xác nhận waiver nếu BTC cho phép.
+RẤT CAO
+Slow corner ~57 MHz
+Repipeline critical paths hoặc hạ target clock công bố cho worst-case; đo lại multi-corner sau thay đổi.
+CAO
+I/O timing core đang waive
+Với AXI top, register boundary + common CTS và SDC thật để signoff path tới port.
+CAO
+Power SRAM là cận trên
+Dùng characterization/activity sát workload hơn; nếu có thể dùng SRAM model/power view chính xác hơn.
+TRUNG BÌNH
+Clock-gating power measurement có hạn chế OpenSTA
+Báo cáo cả vectorless/VCD và giải thích cận trên; dùng tool/power methodology khác để cross-check nếu có.
+TRUNG BÌNH
+Die 72,3 mm²
+Giảm SRAM footprint/buffer depth nếu application cho phép; nghiên cứu array size nhỏ hơn hoặc hierarchical placement chặt hơn.
+TRUNG BÌNH
+Chưa có smart-city demo
+Gắn IP với use-case Edge-AI cụ thể và baseline end-to-end: traffic camera, sensor analytics, anomaly detection...
+RẤT CAO cho cuộc thi
+Chưa full chip pad/ESD
+Chỉ làm nếu thể lệ yêu cầu; nếu cuộc thi chấp nhận reusable IP/core thì không cần mở rộng ngay.
+PHỤ THUỘC BTC
+
+16. Đánh giá mức sẵn sàng cho Cuộc thi Thiết kế vi mạch cho đô thị thông minh lần 3
+Thông tin công khai của BTC năm 2026 nêu chủ đề “Vi mạch xanh cho đô thị thông minh”. Vòng Hoàn thiện sản phẩm tập trung các nội dung như IP Design Verification, Design Synthesis, Physical Design và SoC Design: RTL to FPGA. Dự án này phù hợp mạnh với phần kỹ thuật đó, đặc biệt vì đã có core GDS, GLS, PPA và bước AXI/clock-gating.
+Tiêu chí thực tế
+Trạng thái
+Nhận xét
+Tính kỹ thuật / độ sâu PD
+MẠNH
+Có full core P&R, DRC/LVS/STA, macro SRAM, nhiều vòng debug có evidence.
+Functional verification
+MẠNH
+Core GLS với row gate-level PASS; AXI RTL/GLS cũng PASS.
+Power/“green” metrics
+KHÁ MẠNH
+Có 1,53 W VCD estimate, 134 GOPS/W; AXI clock gating có số liệu overhead/power.
+Reusable SoC IP
+MẠNH VỀ THIẾT KẾ
+AXI4-Lite + AXI-Stream đã có và được kiểm; nhưng full integrated GDS chưa có.
+Final AXI physical implementation
+CHƯA ĐỦ
+Đây là gap kỹ thuật lớn nhất trước khi gọi là final AXI ASIC IP.
+Antenna signoff
+CHƯA ĐỦ
+Còn violations.
+Smart-city use-case
+CHƯA CHỨNG MINH TRONG REPO
+Nên bổ sung demo/benchmark đúng chủ đề.
+Full chip / pad ring
+CHƯA
+Chỉ là blocker nếu thể lệ bắt buộc full chip/tapeout-ready.
+
+Phán quyết: SẴN SÀNG NỘP ở mức một dự án nghiên cứu/accelerator IP rất mạnh, với điều kiện hồ sơ mô tả trung thực trạng thái: “core_v11 đã full GDS và verified; AXI shell đã verified/hardened và GLS với core; full integrated GEMM_top GDS đang là bước tiếp theo”. CHƯA SẴN SÀNG để tuyên bố “AXI ASIC IP hoàn chỉnh/tapeout-ready”. Nếu vòng cuối chấm physical implementation của toàn IP, nên hoàn thành bước flat GEMM_top trước khi bảo vệ.
+
+17. Câu chuyện nên trình bày với giám khảo
+Xuất phát từ GEMM 32×32 INT8 đã chạy trên FPGA KV260.
+Chuyển sang ASIC SKY130 và loại bỏ/phù hợp hóa các thành phần FPGA-specific.
+Harden phân cấp để kiểm soát độ phức tạp của 1024 PE.
+Tích hợp 80 hard SRAM và giải quyết congestion/routing dựa trên locality.
+Hoàn thành core_v11 GDS, DRC/LVS sạch và GLS gate-level đúng.
+Bổ sung AXI4-Lite + AXI4-Stream để biến compute core thành reusable SoC IP.
+So sánh thin/reg/lean và dùng clock gating để giảm overhead; chọn lean_cg.
+Bước tiếp theo: full integrated AXI GDS + signoff + gắn một ứng dụng Edge-AI đô thị thông minh để chứng minh giá trị hệ thống.
+Điểm nhấn nên nói:“Không chỉ chạy OpenLane đến GDS. Nhóm dùng dữ liệu congestion/timing/GLS để tìm nguyên nhân,sửa floorplan, routing strategy và cả lỗi chức năng do tool optimization; sau đó chuẩn hóa core thành AXI IPvà định lượng chính xác overhead của từng phương án interface.”
+18. Roadmap đề xuất trước khi nộp/bảo vệ cuối
+Thứ tự
+Việc cần làm
+Mục tiêu
+1
+Chạy full flat GEMM_top (AXI + core) thành một GDS IP
+Đóng gap lớn nhất hiện tại.
+2
+Full DRC/LVS/STA/multi-corner/GLS cho GEMM_top
+Chứng minh interface-core là một physical design thống nhất.
+3
+Giảm/giải thích antenna violations
+Tiến gần signoff-clean.
+4
+Chuẩn hóa bảng PPA: core_v11 vs AXI final
+Chứng minh overhead nhỏ và lợi ích clock gating.
+5
+Thêm smart-city use-case + benchmark end-to-end
+Khớp trực tiếp chủ đề “Vi mạch xanh cho đô thị thông minh”.
+6
+Xác nhận với BTC có bắt buộc pad ring/full chip không
+Tránh bỏ thời gian vào pad/ESD nếu IP GDS đã được chấp nhận.
+7
+Chuẩn bị reproducibility package
+README, scripts, logs, GDS screenshots, waveforms, result tables.
+
+19. Những tuyên bố nên và không nên dùng
+Nên dùng
+Không nên dùng
+“core_v11 đã hoàn thành RTL-to-GDS và GLS gate-level PASS.”
+“Toàn bộ AXI IP đã có final GDS.”
+“AXI shell đã được harden riêng, DRC/LVS sạch và overhead <1% area.”
+“Design tapeout-ready.”
+“AXI GLS bọc core_v11 PASS.”
+“Antenna signoff = 0.”
+“100 MHz đạt ở typical; worst slow corner tương đương ~57 MHz.”
+“100 MHz đạt mọi PVT corner.”
+“Power VCD estimate 1,53 W; 134 GOPS/W theo methodology của repo.”
+“1,53 W là silicon-measured power.”
+“Repo chưa chứng minh một ứng dụng smart-city end-to-end.”
+Tự gán use-case đô thị nếu chưa có demo/evidence.
+
+20. Nguồn được sử dụng
+Nguồn chính của báo cáo là chính branch được người dùng cung cấp. Phần đánh giá cuộc thi sử dụng thêm thông tin công khai của BTC/SHTP về chủ đề và Vòng Hoàn thiện sản phẩm.
+GitHub branch hierarchical-openlane-flow: https://github.com/HoangNhan2412-ICD/GEMM32-ASIC-sky130/tree/hierarchical-openlane-flow
+Head commit 2b555882 (10/10/2026): https://github.com/HoangNhan2412-ICD/GEMM32-ASIC-sky130/commit/2b55588235b7bad85a22d3d4424301fe92666a5c
+Thông báo phát động 2026 - UIT: https://fce.uit.edu.vn/thong-bao-ve-le-phat-dong-cuoc-thi-thiet-ke-vi-mach-cho-do-thi-thong-minh-lan-3-nam-2026/
+Vòng Hoàn thiện sản phẩm - SHTP: https://shtp.hochiminhcity.gov.vn/vong-hoan-thien-san-pham-bat-dau-hanh-trinh-phat-trien-nhung-san-pham-vi-mach-1018.htm
+Phạm vi: Các số liệu area/timing/power/DRC/LVS/GLS trong báo cáo được lấy từ tài liệu và source của repository. Những hạng mục repo không chứng minh (ví dụ distribution Linux cụ thể, smart-city application demo, full-chip pad ring) được ghi rõ là chưa xác nhận thay vì suy đoán.
+
+
+Phiên bản
+Thay đổi chính
+Vấn đề phát hiện
+Cách xử lý
+Kết quả
+core_v1
+Floorplan đầu, SRAM gom thành khối
+Global route crash
+Phân tích congestion
+FAIL
+core_v1r
+Route lại
+~390k overflow
+Kết luận floorplan không phù hợp
+FAIL
+Layout v2/v3
+Đưa SRAM gần logic
+Congestion giảm nhưng chưa đủ
+Tiếp tục thay đổi placement
+Thử nghiệm
+core_v4
+SYNTH_BUFFERING=0
+9.5k DRT shorts
+Phát hiện cell bị kẹt giữa row
+Tiến bộ lớn
+core_v5
+Nới vùng FeatureSkew
+Hầu như không cải thiện
+Loại bỏ giả thuyết này
+Không chọn
+core_v6
+keep_rows_clear
+Chỉ còn 1 met5 short
+Debug vị trí lỗi
+Gần PASS
+core_v6r
+Thử 3 routing seeds
+Cùng một short
+Xác nhận lỗi geometry, không phải random
+Quan trọng
+core_v7
+Rewrite RightShifter + block met5/SRAM
+Net khác xuyên SRAM
+Tiếp tục sửa floorplan/routing
+Chưa PASS
+core_v7r
+Route lại
+23 DRT errors
+Phát hiện net xuyên macro
+Chưa PASS
+core_v8
+Tắt heuristic diode
+Overflow chỉ còn 46
+Thêm antenna metadata
+Gần hoàn chỉnh
+core_v9
+Antenna ECO
+DRT 0, LVS PASS
+Nhưng sau này phát hiện functional bug row
+Physical PASS nhưng functional issue
+core_v10
+Tăng hold margin
+Setup xấu hơn
+Quay lại config v9
+Không chọn
+Row fix
+-skip_pin_swap
+Sửa lỗi PE23/cột 23
+Thêm row_equiv
+PASS
+core_v11
+Config v9 + row đã sửa
+Antenna + slow corner còn lại
+Baseline cuối
+Final core
+AXI thin
+Wrapper tối giản
+Timing phụ thuộc core port
+Là baseline
+PASS
+AXI reg
+Fully registered
+Area/power cao hơn
+So sánh PPA
+PASS
+AXI lean
+Giảm flop
+Power/area tốt hơn
+Tối ưu tiếp
+PASS
+AXI lean_cg
+Lean + clock gating
+Còn giới hạn power model/antenna
+Chọn làm default
+Phiên bản AXI tốt nhất hiện tại
+GEMM_top full GDS
+AXI + core chung
+Chưa chạy
+Bước tiếp theo
+Chưa hoàn thành

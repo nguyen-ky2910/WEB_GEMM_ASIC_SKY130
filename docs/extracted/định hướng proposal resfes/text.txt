@@ -1,0 +1,317 @@
+ĐỊNH HƯỚNG BÀI BÁO KHOA HỌC THỨ HAI
+GEMM32 ASIC SKY130
+Đánh giá hiện trạng, lựa chọn đóng góp Physical Design, thí nghiệm cần bổ sung và lộ trình công bố
+
+Kết luận chính: Ưu tiên nghiên cứu macro-aware hierarchical Physical Design, routability closure và post-layout functional correctness trên RTL GEMM hiện có. Không cần thiết kế lại toàn bộ systolic array; cần bổ sung thí nghiệm đối chứng để chứng minh hiệu quả từng quyết định PD.
+
+
+THÔNG TIN
+PHẠM VI TÀI LIỆU
+Đối tượng
+GEMM32-ASIC-sky130, nhánh hierarchical-openlane-flow
+Mốc tham chiếu
+Commit 2b55588235b7bad85a22d3d4424301fe92666a5c – 10/10/2026
+Nguồn chính
+Báo cáo toàn diện GEMM32 ASIC SKY130 (12 trang), README.md và NHATKY.md cùng commit
+Liên hệ công bố trước
+ShapeGEMM: Integrating an INT8 FPGA GEMM Accelerator into llama.cpp with a Shape-Aware Offloading Policy
+Phạm vi kiểm chứng
+Tổng hợp theo tài liệu và lịch sử dự án; chưa tự chạy lại OpenLane, GLS, STA hoặc đối chiếu GDS với raw reports.
+
+Phiên bản tổng hợp để thảo luận nội bộ, định hướng proposal và chuẩn bị dữ liệu cho bản thảo khoa học.
+
+Tóm tắt điều hành
+Nhóm đã hoàn thành phần lớn physical implementation của core 32×32 INT8 trên Sky130, sử dụng hardening phân cấp gồm PE, row, array và core với 80 SRAM macro. Phiên bản core_v11 có GDS, detailed routing không lỗi, LVS match, gate-level simulation PASS và setup/hold nội bộ đạt target 100 MHz ở typical corner. Những kết quả này tạo nền tảng kỹ thuật tốt cho một bài ASIC implementation case study.
+Tuy nhiên, chưa thể tuyên bố toàn bộ AXI IP đã có GDS tích hợp hoặc thiết kế đã tapeout-ready: còn antenna violations; setup ở slow corner chưa đạt 100 MHz; timing I/O core chưa được signoff đầy đủ; pad ring/ESD và complete GEMM_top physical implementation chưa được chứng minh.
+Để bài thứ hai khác biệt với ShapeGEMM FPGA, nội dung mới cần là cách tiếp cận triển khai vật lý và bằng chứng thực nghiệm có thể kiểm tra. Không nên giới thiệu lại 32×32 weight-stationary GEMM hay shape-aware offloading policy như đóng góp mới.
+Các quyết định khuyến nghị
+Chọn hướng bài về Physical Design của GEMM compute core, thay vì tuyên bố ngay một full-chip/AXI ASIC accelerator đã hoàn thiện.
+Giữ RTL GEMM đã được kiểm chứng làm baseline; không mở rộng sang GEMV/LLM inference mới chỉ để thêm novelty.
+Tập trung ba trụ cột: macro-aware placement, routability-driven closure, post-layout functional correctness.
+Bổ sung controlled ablation, đa corner STA và giải quyết/ghi rõ antenna; giữ AXI, clock gating, PPA là phần hỗ trợ.
+1. Hiện trạng triển khai và mức độ hoàn thiện
+Hạng mục
+Kết quả xác nhận trong tài liệu
+Diễn giải
+Kiến trúc
+1.024 PE, INT8, 32×32 weight-stationary
+Kế thừa ShapeGEMM FPGA
+Công nghệ / flow
+sky130A; OpenLane 1.0.2
+Hierarchical hardening
+Hard macros
+32 PE row + 80 SRAM = 112
+80 SRAM × 2 KiB = 160 KiB
+Die
+7,06 × 10,24 mm ≈ 72,3 mm²
+Die area, không phải std-cell area
+Detailed routing
+0 DRT violations (core_v11)
+Đã route core
+Magic DRC
+48 cờ abstract, báo cáo 0 lỗi thật khi full-layout check
+Cần lưu evidence kiểm tra
+LVS
+Match
+So sánh layout với netlist cuối
+GLS
+PASS: 64×64×64; 8×32×544; 16×992×32
+Row gate-level kết hợp core netlist
+Timing TT 100 MHz
+Setup +1,21 ns; Hold +0,27 ns
+Timing path nội bộ đạt typical
+Timing SS 100 MHz
+Setup -7,61 ns RCmax; ~57 MHz
+Không đạt 100 MHz worst-case
+Antenna
+219 pin / 205 net
+Chưa antenna signoff-clean
+AXI
+RTL/GLS và shell P&R riêng đã PASS
+Full integrated GEMM_top GDS chưa chạy
+
+Nguồn: Báo cáo toàn diện, Mục 1, 5–8, 12–13; README.md tại commit chỉ định.
+Ranh giới tuyên bố: “core_v11 đã hoàn tất RTL-to-GDS và được GLS kiểm chứng” là phù hợp với hồ sơ hiện tại. “Full AXI ASIC IP tapeout-ready” chưa phù hợp.
+
+2. Vì sao chính Physical Design là hướng có cơ sở nhất?
+Bài ShapeGEMM trước đã công bố accelerator 32×32 INT8, kết nối KV260/llama.cpp, shape-aware policy và các đánh giá throughput, quality, energy trên FPGA. Nếu bài mới chỉ chạy lại synthesis → floorplan → placement → CTS → routing → GDS, reviewer có thể xem đó là porting thông thường. Tuy nhiên, lịch sử triển khai Sky130 cho thấy một câu chuyện có chiều sâu khác: die chứa nhiều SRAM và compute row macro, routing phải đi vòng qua blockages, còn các bước physical optimization có thể tác động tới timing và cả chức năng netlist.
+2.1. Footprint macro và hệ quả routing
+Kích thước LEF SRAM: 683,1 × 416,54 µm/macro. Kích thước PE row macro: khoảng 3.517,62 × 133,28 µm. Từ số liệu này, tính được footprint tham khảo:
+Thành phần
+Diện tích footprint ước tính
+Tỷ lệ die
+80 SRAM macro
+≈ 22,76 mm²
+≈ 31,5%
+32 PE row macro
+≈ 15,00 mm²
+≈ 20,8%
+Tổng hai nhóm macro
+≈ 37,76 mm²
+≈ 52,2%
+Diện tích die còn lại
+≈ 34,53 mm²
+≈ 47,8%
+
+Diện tích tính từ kích thước LEF và die 72,2944 mm²; là phép tính suy ra, không phải số liệu density đo từ tool.
+Hơn một nửa die là footprint hard macros, nhưng phần die còn lại không đồng nghĩa toàn bộ là diện tích đặt standard cells hợp lệ: còn các ràng buộc về channel, halo, PDN, routing blockages và khoảng hở. Đây là nguyên nhân khiến macro locality và khả năng đi dây trở thành trọng tâm.
+2.2. Bằng chứng từ các phiên bản core
+Phiên bản
+Thay đổi / vấn đề
+Kết quả quan sát
+core_v1r
+SRAM clustering; FeatureSkew/OutputDeskew đi vòng qua macro
+~390.000 gcell overflow, global route không khả thi
+core_v4
+Thay layout, tắt SYNTH_BUFFERING
+Overflow còn ~6.800; DRT còn ~9.500 shorts
+core_v6
+Đẩy cell khỏi vùng giữa row macros
+Overflow 575; còn 1 short met5
+core_v6r
+Thử seed 7, 23, 101
+Cùng short met5 → vấn đề hình học
+core_v7r
+RightShifter rewrite, met5/SRAM blockage
+23 DRT errors; setup nội bộ sạch
+core_v8
+Tắt diode heuristic
+Overflow 46; không còn net xuyên macro
+core_v9
+Bổ sung antenna metadata/ECO, detailed route
+DRT 0, LVS match; sau đó phát hiện lỗi chức năng ở row
+core_v11
+-skip_pin_swap, row equivalence, harden lại core
+DRT 0, LVS match, GLS 3 shapes PASS
+
+Nguồn: NHATKY.md và Báo cáo toàn diện, Mục 7, 8 và phụ lục lịch sử run.
+Cảnh báo khoa học: các phiên bản lịch sử không phải thí nghiệm “chỉ thay đổi một biến”. Ví dụ core_v4 đồng thời thay placement và synthesis buffering. Không được quy toàn bộ cải thiện overflow cho một nguyên nhân nếu chưa có controlled ablation.
+
+3. Hướng paper được ưu tiên
+Đề xuất title: A Routability-Driven Hierarchical Physical Implementation of a 1024-PE INT8 GEMM Accelerator in Sky130 CMOS
+
+3.1. Câu hỏi nghiên cứu
+How can a macro-dominated 1024-PE INT8 GEMM accelerator be physically implemented in an open 130-nm CMOS technology while addressing routing congestion, timing constraints, and post-layout functional correctness?
+3.2. Ba trụ cột đóng góp dự kiến
+Macro-aware hierarchical physical implementation: trình bày hardening PE → row → array → core và chiến lược đặt 80 SRAM gần logic tiêu thụ, kết hợp chừa routing channels giữa 32 row macros. Khẳng định mới phải nằm ở quy tắc/phương pháp cụ thể và hiệu quả đã đo, không chỉ ở việc “biết sử dụng macro placement”.
+Routability-driven implementation characterization: đánh giá tác động riêng của SRAM locality, row-channel clearance, routing blockages và buffering/antenna ECO lên overflow, DRT violations, wirelength, timing, runtime và memory cost. Đây là thực nghiệm chính nên có bảng ablation.
+Post-layout functional validation: trình bày trường hợp resizer pin swap trên một cell and2b không giao hoán, gây sai bit tích PE 23 mặc dù LVS match; mô tả row-level equivalence và core GLS để kiểm chứng tính đúng đắn sau hardening.
+Định vị học thuật: đây trước hết là một ASIC implementation case study và methodology-oriented investigation. Hierarchical flow, placement locality và formal/GL equivalence đều là kỹ thuật đã biết; phải đối chiếu Related Work và có thí nghiệm tốt mới có cơ sở tuyên bố phương pháp mới có tính khái quát.
+4. Vai trò của AXI shell và clock gating
+AXI shell bổ sung AXI4-Lite, ba luồng AXI4-Stream 256-bit, IRQ/status/error và các register điều khiển. Thí nghiệm hiện có khảo sát four variants: thin, reg, lean, lean_cg. Đây là một phần kết quả bổ trợ rất tốt, nhưng chưa phải thành phần chính vì shell chỉ chiếm một tỷ lệ diện tích nhỏ so với compute core.
+AXI shell variant
+Std-cell area
+VCD power trong shell TB
+Nhận xét
+thin
+10.372 µm²
+1,79 mW
+Overhead logic nhỏ; không register đầy đủ ở port
+reg
+72.708 µm²
+14,3 mW
+Registered; diện tích và power lớn
+lean
+47.632 µm²
+9,87 mW
+Giảm flop so với reg
+lean_cg
+32.765 µm²
+3,02 mW
+Lean + clock gating; chọn default
+
+Nguồn: Báo cáo toàn diện, Mục 11–12. Đây là overhead shell, không phải công suất của toàn accelerator.
+Từ các số trên, lean_cg thấp hơn lean khoảng 31,2% về diện tích standard-cell và khoảng 69,4% về VCD power của shell testbench. Tuy vậy, phương pháp power với gated clocks có giới hạn OpenSTA; không dùng trực tiếp phần trăm này để tuyên bố giảm điện năng toàn chip.
+Cách sử dụng trong paper: một mục “AXI Interface Design and Physical Overhead Characterization”, nhằm chứng minh khả năng tái sử dụng IP, chi phí giao tiếp và đánh đổi area–power–latency. Nếu title/abstract tuyên bố full AXI ASIC IP, phải có GDS/STA/GLS tích hợp tại GEMM_top.
+5. Kế hoạch thực nghiệm không cần sửa lại RTL GEMM
+5.1. Experiment A – Controlled macro-placement ablation
+Giữ nguyên RTL, row hard macro, SRAM count, die size, PDK, tool version, clock constraint và seed. Thay một yếu tố placement mỗi lần: (A0) SRAM clustering; (A1) locality-aware placement; (A2) locality-aware + clearance cho row channels. Các cấu hình không route được vẫn là dữ liệu hợp lệ nếu ghi rõ giai đoạn thất bại.
+Metric bắt buộc
+Mục đích
+Global-route overflow và heatmap
+Chứng minh thay đổi routability
+Số net xuyên macro và độ dài net
+Chứng minh placement locality/đường đi
+DRT violation theo loại và vị trí
+Tìm giới hạn detailed routing
+WNS/TNS và routing runtime
+Đánh giá trade-off timing và chi phí flow
+Die/core area giữ cố định
+Loại bỏ confound từ việc nới area
+
+5.2. Experiment B – Routing strategy ablation
+Giữ nguyên floorplan, netlist và upstream stage. Khảo sát từng yếu tố như met5 blockages trên SRAM, diode heuristic, antenna metadata/ECO và routing seeds. Tách riêng kết quả global route so với detailed route: overflow thấp chưa có nghĩa DRT = 0. Khi chọn seed, không dùng việc thay seed để che một short cố định do lỗi hình học.
+Đầu ra: bảng các cấu hình + số lỗi DRT, overflow, antenna pin/net, setup/hold, số net xuyên macro và thời gian chạy. Lưu TCL/config diff của mỗi case.
+5.3. Experiment C – Post-route functional correctness
+So sánh đúng một row RTL với netlist tại các checkpoint trước/sau timing repair, sử dụng stimulus cố định. Ghi nhận sai lệch ở PE 23, bit 12–15 của tích, và bước có pin-swap; sau đó kiểm tra lại netlist với -skip_pin_swap. Mục đích là chứng minh verification gate không thể chỉ dựa vào DRC/LVS.
+Kết quả nên trình bày: sơ đồ chuỗi RTL → synthesis → CTS → resizer → final netlist; bảng PASS/FAIL cho equivalence theo checkpoint; thông tin cell bị thay đổi; thống kê 2.000 chu kỳ ở row và kết quả ba matrix shapes ở core_v11.
+5.4. Quy tắc kiểm soát thí nghiệm
+Đóng băng core_v11 đúng commit và lưu hash của RTL, LEF/GDS SRAM, tool, PDK, seed, SDC, macro placements, floorplan scripts.
+Mỗi ablation chỉ thay đổi một yếu tố được công bố. Nếu một case bắt buộc sửa nhiều yếu tố để chạy tiếp, gắn nhãn rõ ràng là composite configuration.
+Thí nghiệm sàng lọc có thể dừng ở global route/core-probe; chỉ các case quan trọng chạy full detailed route và STA.
+Trình bày cả case thất bại, lý do và log evidence; không chỉ chọn những run có kết quả đẹp.
+6. Các giới hạn còn lại cần đóng hoặc công bố minh bạch
+Giới hạn
+Mức ưu tiên
+Hành động đề xuất
+Antenna còn 205 net (219 pin)
+P0
+Tiếp tục repair có kiểm soát; nếu không zero, công bố rõ trạng thái, không viết signoff-clean
+Setup worst slow -7,61 ns
+P1
+Báo Fmax theo PVT; cân nhắc điều chỉnh target hợp lệ nếu không đổi pipeline
+Core I/O timing miễn; 196 path, worst -0,81 ns TT
+P1
+Tách nghĩa của timing nội bộ và I/O; xây timing budget thực tế nếu có GEMM_top
+GEMM_top chưa có integrated GDS
+P2 theo phạm vi
+Chạy full top nếu muốn tuyên bố AXI ASIC IP
+Pad ring / ESD / package chưa có
+Tùy scope
+Giữ phạm vi reusable core/macro nếu chỉ làm implementation study
+SRAM power model hạn chế
+P1
+Công bố power model và sai số; tách VCD/vectorless
+Thiếu controlled PD ablation
+P0 cho paper
+Tối thiểu A/B/C; dùng log và seed có thể kiểm chứng
+
+Nguồn trạng thái: Báo cáo toàn diện, Mục 8, 13, 15, 19; các ưu tiên P0/P1/P2 là đánh giá của tài liệu này.
+7. Phân tích PPA: nên công bố gì, tránh công bố gì?
+Metric
+Giá trị hiện có
+Cách ghi đúng trong bài
+Peak compute
+204,8 GOPS
+Theoretical peak = 2 × 32 × 32 × 100 MHz; không phải measured throughput
+VCD power
+1,53 W
+Post-implementation estimated power, TT/25°C/1,8V, 100 MHz theo cửa sổ activity cụ thể
+Vectorless power
+2,89 W
+OpenSTA vectorless estimate; hoạt động giả định khác VCD
+Energy efficiency
+134 GOPS/W
+Peak-rate/VCD-estimated-power; không phải measured-silicon TOPS/W
+Area efficiency
+2,83 GOPS/mm²
+Peak compute trên die area 72,3 mm²; không phải active cell area
+Frequency
+100 MHz ở TT, ~57 MHz ở SS
+Báo đủ corners; không tuyên bố 100 MHz all-PVT
+
+Power VCD trong NHATKY.md sử dụng chu kỳ 2300–3200 của phép GEMM 64×64×64; SRAM 80 macro đóng góp 445 mW trong cả phép tính vectorless và VCD theo model hiện dùng. Do đó nên báo cáo rõ cửa sổ VCD, mạch mô phỏng, clock/reset behavior, leakage/dynamic breakdown và hạn chế của mô hình SRAM.
+Không sử dụng các con số speedup prefill 2,21×–2,93× hoặc energy/token từ KV260 như kết quả đo trên ASIC. Chúng thuộc bài ShapeGEMM FPGA đã công bố; bài ASIC mới cần trích dẫn bài cũ và nêu đúng nền tảng đánh giá.
+8. Cấu trúc paper đề xuất
+Section
+Nội dung chính
+I. Introduction
+Động lực chuyển FPGA accelerator sang ASIC có nhiều hard macros; research question về routability/timing/correctness.
+II. Background and Related Work
+Trích ShapeGEMM trước, systolic ASIC, macro-aware PD, open-source EDA; xác định novelty thật.
+III. ASIC-Compatible GEMM Architecture
+Mô tả phần kế thừa và thay đổi cần thiết: FPGA-specific DSP/BRAM, buffer, reset, SRAM mapping.
+IV. Hierarchical Physical Design Methodology
+PE → row → array → core, locality-aware SRAM placement, row channels, routing blockages.
+V. Physical Implementation Challenges
+Overflow, geometrical shorts, RightShifter timing, antenna, pin-swap-induced mismatch.
+VI. Experimental Results
+Controlled ablations, DRC/LVS/STA/GLS, PPA/power, AXI shell overhead.
+VII. Discussion and Limitations
+PVT, antenna, SRAM model, waived I/O timing, phạm vi chưa tape-out.
+VIII. Conclusion
+Bài học có thể áp dụng lại; nêu rõ giới hạn phạm vi nghiệm chứng.
+
+9. Lộ trình thực hiện và deliverables
+Ưu tiên
+Công việc
+Đầu ra cần có
+P0
+Đóng băng baseline core_v11 và lưu đầy đủ config/logs
+Reproducibility package; phiên bản rõ ràng
+P0
+Antenna triage / xử lý khi có khả năng
+Antenna pin/net & evidence, không che violations
+P0
+Controlled PD ablations A/B/C
+Bảng so sánh có kiểm soát, log và hình minh họa
+P1
+Chuẩn hóa multi-corner STA
+Setup/hold/WNS/TNS/Fmax theo PVT và phạm vi I/O
+P1
+Chuẩn hóa PPA + power methodology
+Bảng area/power, window VCD, giả định SRAM
+P2
+Full GEMM_top AXI + core layout
+GDS tích hợp + CTS/STA/DRC/LVS/GLS nếu chọn full-IP scope
+P2
+Đối chiếu với ASIC/P&R literature
+Related Work và claim novelty đã kiểm tra
+P3
+Đóng gói scripts, netlist hashes, screenshots
+Artifact package để tái lập và phản biện
+
+10. Đánh giá khả năng công bố một cách thực tế
+Mức hoàn thiện
+Khả năng trình bày học thuật
+Hiện tại
+Đủ cơ sở cho báo cáo kỹ thuật và case study ASIC implementation; novelty chưa được xác lập đầy đủ.
+Thêm controlled ablations + signoff clarity
+Có nền tảng thuyết phục hơn để gửi workshop/hội nghị phù hợp với implementation methodology.
+Có thêm phương pháp PD có tính khái quát, nhiều case study
+Tiềm năng cao hơn cho venue chuyên về CAD/PD, nhưng cần bằng chứng vượt một thiết kế.
+Chỉ có GDS/đổi tool sang Sky130
+Không đủ để tự động trở thành bài báo nghiên cứu mạnh.
+
+Khi reviewer đọc paper, ba câu hỏi cần trả lời được là: (1) Điều gì mới so với ShapeGEMM FPGA? (2) Tại sao kết quả không chỉ là thao tác OpenLane thông thường? (3) Kết quả có cho thấy nguyên tắc thiết kế/triển khai có thể áp dụng hoặc kiểm chứng ngoài đúng một chuỗi debug hay không?
+11. Khuyến nghị kết luận và phạm vi paper
+Đề nghị chốt phạm vi paper: “Physical Design of the GEMM Compute Core in Sky130”, không khẳng định “Complete AXI ASIC Accelerator” cho tới khi có full integrated GEMM_top GDS.
+
+Dự án nên tiếp tục giữ RTL GEMM hiện tại và xây bài mới theo ba trụ cột: Macro-aware placement → Routability closure → Post-layout functional correctness. Các kết quả AXI shell, clock gating và PPA sẽ tăng sức nặng cho phần evaluation, nhưng không làm lu mờ research question về PD.
+Bước cần quyết định ngay là khả năng truy xuất raw metrics.csv, congestion reports, timing reports, routed DEF/GDS và script/config của các run cũ. Nếu còn dữ liệu đủ chi tiết, nhóm có thể tái dựng phần nào ablation từ kết quả sẵn có; nếu không, nên thiết kế ba run controlled ablation nhỏ, dùng core_v11 làm baseline và chỉ chạy full-route các trường hợp thiết yếu.
+12. Nguồn đối chiếu và ghi chú phương pháp
+[S1] Báo cáo toàn diện dự án “GEMM32 ASIC SKY130 – Hierarchical OpenLane Flow + AXI Accelerator IP”, 12 trang, phân tích commit 2b555882 ngày 10/10/2026 (file nhóm cung cấp).
+[S2] README.md, nhánh hierarchical-openlane-flow, commit 2b555882: https://github.com/HoangNhan2412-ICD/GEMM32-ASIC-sky130/blob/2b55588235b7bad85a22d3d4424301fe92666a5c/README.md
+[S3] NHATKY.md, cùng commit: https://github.com/HoangNhan2412-ICD/GEMM32-ASIC-sky130/blob/2b55588235b7bad85a22d3d4424301fe92666a5c/NHATKY.md
+[S4] Khoa et al., “ShapeGEMM: Integrating an INT8 FPGA GEMM Accelerator into llama.cpp with a Shape-Aware Offloading Policy”, tài liệu công bố trước của nhóm (PDF đã cung cấp).
+Phương pháp phân biệt dữ kiện và đề xuất: số liệu chip/flow là dữ kiện theo nguồn [S1]–[S3]; phần tính macro footprint là phép tính suy ra từ LEF; phương án paper, mức ưu tiên và kế hoạch thí nghiệm là nhận định, khuyến nghị cần kiểm chứng. Chưa thực hiện độc lập synthesis, layout inspection, timing signoff hoặc power extraction trong quá trình biên soạn.

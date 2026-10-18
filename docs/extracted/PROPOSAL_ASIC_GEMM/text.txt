@@ -1,0 +1,134 @@
+ĐỀ XUẤT NGHIÊN CỨU
+Triển khai vật lý phân cấp, tối ưu khả năng định tuyến và kiểm chứng chức năng sau layout cho bộ tăng tốc GEMM INT8 32×32 trên SKY130
+Hierarchical Physical Implementation, Routability Optimization, and Post-Layout Functional Verification of a 32×32 INT8 GEMM Accelerator in SKY130
+Tiểu ban: Thiết kế vi mạch bán dẫn và Công nghệ ô tô số
+Tên nhóm: FPGT
+Tác giả: Khoa D. Nguyen; Quyen T. N. Ngo; Ky C. Nguyen; Nhan V. H. Pham
+Giảng viên hướng dẫn: Pham The Vinh
+Tóm tắt
+Nghiên cứu này đề xuất triển khai vật lý bộ tăng tốc nhân ma trận tổng quát GEMM INT8 trên công nghệ SKY130, kế thừa kiến trúc mảng tâm thu (Systolic Array) 32×32 đã được kiểm chứng trên FPGA. Nghiên cứu tập trung vào khả năng triển khai một accelerator có nhiều hard macro bằng flow ASIC mã nguồn mở, đồng thời kiểm soát chất lượng định tuyến, timing và tính đúng đắn chức năng sau tối ưu vật lý. Phương án triển khai sử dụng 32 macro hàng phần tử xử lý (PE-row macro), tích hợp với 80 hard macro SRAM. Các quyết định về vị trí SRAM, kênh định tuyến, buffering, macro blockage và antenna repair được đánh giá qua các cấu hình đối chứng, dựa trên routing overflow, lỗi detailed routing, timing, diện tích, thời gian chạy và RAM đỉnh. Bên cạnh DRC và LVS, nghiên cứu đánh giá các checkpoint so sánh tương đương ở cấp RTL, final netlist cấp row và mô phỏng mức cổng ở cấp core. Một trường hợp sai khác chức năng quan sát được sau tối ưu timing được sử dụng để khảo sát khả năng phát hiện và định vị lỗi của quy trình kiểm chứng. Kết quả sơ bộ của nhóm ghi nhận core đã được triển khai đến GDSII, số vi phạm detailed-routing DRC bằng 0, LVS khớp và gate-level simulation thành công trên các ca đã chạy; các vấn đề về antenna và timing đa corner vẫn được tiếp tục đánh giá. Tại tần số mục tiêu 100 MHz, thông lượng đỉnh lý thuyết là 204,8 GOPS với giả thiết mỗi PE thực hiện một MAC mỗi chu kỳ và một MAC được tính là hai phép toán. Kết quả dự kiến gồm quy trình triển khai có khả năng tái lập, bằng chứng định lượng về các đánh đổi vật lý và đánh giá kiểm chứng chức năng trên final netlist. Giao tiếp AXI4-Lite và AXI4-Stream được xem xét như phần mở rộng phục vụ tích hợp SoC.
+Từ khóa: Bộ tăng tốc GEMM; ASIC; Physical Design; Mảng tâm thu; SKY130; Hard SRAM; Hierarchical Design; Routability; AXI; OpenLane.
+1. Giới thiệu
+1.1. Tổng quan tài liệu nghiên cứu
+Các bộ tăng tốc phần cứng chuyên dụng sử dụng kiến trúc song song để xử lý những phép nhân ma trận có khối lượng tính toán lớn. Jouppi và cộng sự (2017) trình bày Tensor Processing Unit (TPU) với khối nhân ma trận gồm 65.536 đơn vị MAC 8 bit, minh họa khả năng khai thác tính song song của ASIC cho suy luận mạng nơ-ron [1]. Chen và cộng sự (2017) phát triển Eyeriss, nhấn mạnh tái sử dụng dữ liệu cục bộ và giảm chi phí di chuyển dữ liệu [2]. Các công trình này cho thấy hiệu quả của accelerator phụ thuộc vào cả năng lực tính toán, tổ chức bộ nhớ và luồng dữ liệu.
+Khi chuyển kiến trúc từ FPGA sang ASIC, quá trình phát triển cần bao gồm synthesis, floorplanning, placement, clock tree synthesis, routing và kiểm chứng sau triển khai. Shalan và Edwards (2020) giới thiệu OpenLane, một flow RTL-to-GDSII tích hợp các công cụ mã nguồn mở cho thiết kế ASIC [3]. Đối với thiết kế mixed-size, Hsu và cộng sự (2011) xem xét pin density, routing overflow và tài nguyên định tuyến bị hạn chế bởi macro lớn trong placement [4]. Tan và cộng sự (2017) đưa vị trí chân macro vào bài toán tối ưu congestion và diện tích bố trí [5]. Chua và cộng sự (2024) đề xuất CARDS để tinh chỉnh vị trí, hướng macro và giảm half-perimeter wirelength (HPWL) [6]. HPWL là chỉ số ước lượng kết nối, cần được phân biệt với wirelength thực sau routing và mức congestion.
+Liên quan trực tiếp đến phân cấp vật lý, Kahng, Varadarajan và Wang phát triển Hier-RTLMP, khai thác hierarchy và dataflow trong RTL để bố trí macro cho các IP lớn [7]. Trong nghiên cứu Basilisk, Sauter và cộng sự (2024) đánh giá cải tiến flow mã nguồn mở qua chất lượng kết quả, thời gian chạy và RAM đỉnh trên một SoC sử dụng công nghệ IHP 130 nm [8]. Những công trình này cung cấp nền tảng cho thiết kế phân cấp và đánh giá flow, nhưng kết quả của chúng không trực tiếp xác lập hiệu quả của từng quyết định vật lý trên GEMM 32×32 sử dụng SKY130.
+Về kiểm chứng, Huang và cộng sự (2000) trình bày AQUILA cho kiểm tra tương đương thiết kế tuần tự, bao gồm mở rộng từ gate-to-gate sang RTL-to-gate [9]. Baungarten-Leon và cộng sự (2025) mô tả workflow RTL-to-GDSII cho embedded FPGA trên SKY130, bao gồm thiết kế phân cấp, tích hợp macro và gate-level simulation [10]. Tài liệu EQY của YosysHQ cung cấp cơ sở triển khai kiểm chứng tương đương bằng công cụ mã nguồn mở [11]. Vì vậy, equivalence checking và gate-level simulation là những kỹ thuật đã có; đóng góp của đề tài cần nằm ở cách áp dụng và bằng chứng đánh giá trong flow cụ thể.
+Trong phạm vi các tài liệu được khảo sát, đề tài tập trung vào hai khoảng trống thực nghiệm. RG1 là nhu cầu đánh giá có hệ thống sự kết hợp giữa hierarchical hardening, SRAM locality, routing-channel planning, buffering và antenna repair trên GEMM 32×32 có mật độ hard macro cao. RG2 là nhu cầu làm rõ vai trò của các checkpoint chức năng trong phát hiện và định vị sai khác trên final netlist sau tối ưu vật lý phân cấp. Tương ứng, C1 xây dựng và đánh giá phương án triển khai phân cấp có xét đến macro; C2 hệ thống hóa tối ưu routability bằng thí nghiệm định lượng; C3 đánh giá kiểm chứng nhiều cấp thông qua trường hợp lỗi đã quan sát và các kiểm tra trên netlist. C1 và C2 gắn với RG1, còn C3 gắn với RG2. Phần AXI phục vụ hướng tích hợp hệ thống, không được xem là đóng góp độc lập ngoài ba nội dung này.
+1.2. Sự cần thiết của nghiên cứu
+GEMM 32×32 gồm 1.024 phần tử xử lý (Processing Element – PE), tạo ra lượng lớn kết nối tính toán song song. Khi tích hợp 32 PE-row macro và 80 SRAM, khả năng định tuyến chịu ảnh hưởng trực tiếp của vị trí macro, phân bố chân, khoảng cách đến logic sử dụng và các lớp kim loại còn khả dụng. Một floorplan không phù hợp có thể gây congestion, kéo dài dây hoặc khiến routing không hoàn tất. Do đó, cần đánh giá các phương án triển khai trên chính thiết kế này để xác định cấu hình khả thi và các đánh đổi về diện tích, timing, công suất và tài nguyên tính toán.
+Đồng thời, thiết kế đạt DRC hoặc LVS chưa đủ để kết luận hành vi sau triển khai tương đương với RTL. DRC kiểm tra quy tắc hình học trong phạm vi bộ luật được sử dụng; LVS đối chiếu layout với netlist tham chiếu của phép kiểm. Khi netlist tham chiếu đã sai so với RTL, LVS vẫn có thể khớp. Việc kết hợp tối ưu routability với các checkpoint chức năng giúp đánh giá chất lượng vật lý và kiểm soát sai khác sau các bước biến đổi netlist. Đây là cơ sở cần thiết để phát triển core thành một accelerator IP có khả năng tích hợp vào SoC.
+1.3. Tính khả thi của nghiên cứu
+Câu hỏi nghiên cứu: Các quyết định về tổ chức macro, bố trí SRAM và tối ưu vật lý ảnh hưởng như thế nào đến khả năng hoàn tất routing, timing và chi phí triển khai GEMM INT8 32×32 trên SKY130? Các checkpoint ở cấp RTL, row và core có thể phát hiện, định vị sai khác chức năng sau tối ưu vật lý trong phạm vi nào và với chi phí kiểm chứng bao nhiêu?
+Thiết kế nghiên cứu: Đề tài kế thừa RTL đã kiểm chứng trên FPGA, các PE-row macro và phiên bản GEMM core đã có GDSII. Đây là cơ sở để khóa cấu hình tham chiếu, lựa chọn các phương án đối chứng và thực hiện thí nghiệm bằng OpenLane/OpenROAD. Ba nội dung C1–C3 được đánh giá bằng các nhóm kết quả tương ứng về tổ chức macro, tối ưu định tuyến và kiểm chứng chức năng. Giao tiếp AXI đã phát triển được sử dụng cho phần mở rộng, sau khi core và các bằng chứng chính được rà soát.
+Quy mô mẫu và đối tượng nghiên cứu: Đối tượng là core GEMM INT8 có 1.024 PE, 32 hardened PE-row macro và 80 SRAM hard macro. Đơn vị thực nghiệm là các cấu hình triển khai và checkpoint netlist của cùng thiết kế. Các phiên bản lịch sử chỉ được dùng làm đối chứng định lượng khi còn đủ cấu hình và log. GLS dự kiến sử dụng các bộ kích thước 64×64×64, 8×32×544 và 16×992×32; thứ tự các chiều, số testcase và dữ liệu đầu vào được ghi rõ theo testbench.
+Nguồn dữ liệu: Dữ liệu được lấy từ báo cáo synthesis, placement, routing, static timing analysis (STA), DRC, LVS, antenna và power analysis. Kết quả sơ bộ của nhóm ghi nhận detailed-routing DRC bằng 0, LVS khớp và GLS thành công trên các ca đã chạy. Khi tổng hợp, mỗi kết quả được gắn với đúng phiên bản netlist, GDSII, constraint và công cụ. Activity VCD phục vụ ước tính công suất; RTL FPGA và RTL ASIC được dùng làm tham chiếu ở những checkpoint phù hợp.
+Ngân sách và kinh phí: Nghiên cứu sử dụng PDK SKY130 và các công cụ mã nguồn mở như OpenLane, OpenROAD, Yosys, Icarus Verilog và KLayout, nên không yêu cầu bản quyền EDA thương mại. Kinh phí chủ yếu dành cho tính toán và lưu trữ. Cấu hình máy, RAM đỉnh, mức song song và thời gian chạy được ghi nhận để chọn số thí nghiệm phù hợp với tài nguyên sẵn có. Phạm vi kinh phí chưa bao gồm chế tạo chip.
+Thời gian thực hiện: Dự án dự kiến hoàn thiện trong tám tuần, kế thừa kết quả core và AXI hiện có. Thời gian tập trung vào chuẩn hóa dữ liệu, thí nghiệm đối chứng, phân tích PPA và kiểm chứng chức năng. Bộ bằng chứng C1–C3 được ưu tiên; tích hợp vật lý toàn bộ top có AXI được thực hiện khi điều kiện tính toán và tiến độ cho phép.
+Thách thức và rủi ro tiềm ẩn: Các rủi ro gồm congestion, lỗi routing, antenna violations, timing tại slow corner, thời gian chạy dài và sai khác chức năng sau tối ưu. Nhóm bảo lưu checkpoint, kiểm chứng row trước tích hợp core, giới hạn tài nguyên từng lượt chạy và kiểm tra lại sau thay đổi netlist. Kết quả thất bại, timeout hoặc chưa kết luận được vẫn được báo cáo. Antenna còn lại, timing đa corner và tích hợp AXI là các hạng mục tiếp tục hoàn thiện, không được mô tả như kết quả đã đạt.
+2. Mục tiêu nghiên cứu
+Xây dựng và đánh giá quy trình triển khai vật lý bộ tăng tốc GEMM INT8 sử dụng mảng tâm thu 32×32 trên SKY130 bằng công cụ mã nguồn mở, kế thừa kiến trúc đã kiểm chứng trên FPGA và kiểm tra việc bảo toàn hành vi khi chuyển sang ASIC.
+Phát triển phương án Hierarchical Physical Design có xét đến macro, sử dụng PE Row làm đơn vị hardening tái sử dụng và tích hợp 32 PE-row macro cùng 80 SRAM. Đánh giá các lựa chọn floorplan và SRAM locality qua khả năng hoàn tất routing, diện tích, thời gian chạy và RAM đỉnh, trong phạm vi các cấu hình đã thực nghiệm.
+Định lượng ảnh hưởng của buffering, routing channel, macro blockage và antenna repair đến routability và timing bằng thí nghiệm có cấu hình tham chiếu. Đồng thời, đánh giá các checkpoint tương đương RTL, tương đương final netlist cấp row và GLS cấp core qua khả năng phát hiện, định vị sai khác chức năng cùng chi phí kiểm chứng.
+Kiểm chứng giao tiếp AXI4-Lite và AXI4-Stream, đánh giá overhead ở cùng giai đoạn triển khai để hướng tới tích hợp SoC. Thiết kế được đánh giá theo area, timing, power, thông lượng, chất lượng routing và chi phí chạy; trạng thái hoàn thành của core và top có AXI được báo cáo riêng.
+3. Phạm vi nghiên cứu
+Nghiên cứu tập trung vào triển khai và kiểm chứng GEMM core INT8 32×32 trên SKY130 bằng OpenLane/OpenROAD. Phạm vi gồm chuẩn hóa RTL, hardening PE Row, tích hợp macro, tối ưu floorplan và routing, phân tích timing tại các corner được mô hình hỗ trợ, ước tính công suất và kiểm chứng chức năng trên netlist sau triển khai. PE, PE Row, Array và GemmAccelerator biểu diễn các cấp tổ chức RTL; nghiên cứu chỉ gọi một khối là hard macro khi có các view vật lý và timing tương ứng. Phương án tích hợp core sử dụng 32 PE-row macro và 80 SRAM, không mặc định mọi cấp RTL đều được harden độc lập. Phần AXI bao gồm kiểm chứng chức năng và đánh giá overhead ở mức thực sự hoàn thành; GDSII của core được phân biệt với GDSII của toàn bộ AXI-enabled GEMM_top. Phạm vi dừng ở ASIC IP và core GDSII, chưa bao gồm pad ring, ESD, packaging, chế tạo hoặc đo trên silicon. Các kết luận chỉ áp dụng cho thiết kế, cấu hình và phạm vi kiểm tra đã thực hiện.
+4. Cách tiếp cận và phương pháp
+Nghiên cứu sử dụng phương pháp thiết kế và đánh giá thực nghiệm, kết hợp triển khai vật lý phân cấp có xét đến macro, tối ưu khả năng định tuyến dựa trên số liệu và kiểm chứng chức năng sau triển khai. Các bước được thực hiện trên SKY130 bằng hệ sinh thái OpenLane/OpenROAD [3], với dữ liệu phiên bản được lưu để đối chiếu kết quả và chạy lại thí nghiệm.
+4.1. Kiến trúc GEMM và các hệ quả đối với Physical Design
+Nghiên cứu kế thừa kiến trúc mảng tâm thu INT8 32×32 từ phiên bản FPGA. Khi chuyển sang ASIC, cấu trúc tính toán và bộ nhớ đặt ra ba vấn đề chính về tổ chức vật lý, tài nguyên định tuyến và bảo toàn chức năng.
+Thứ nhất, mảng gồm 1.024 PE với nhiều kết nối dữ liệu giữa các phần tử liền kề. Ở cấp RTL, 32 PE tạo thành PE Row; các row hình thành Array và được tích hợp với bộ nhớ, điều khiển trong GemmAccelerator. Ở cấp vật lý, PE Row là đơn vị hardening tái sử dụng trong phương án nghiên cứu. Mỗi row được kiểm chứng và triển khai thành bộ netlist, LEF, GDSII cùng mô hình timing phù hợp trước khi tích hợp 32 instance vào core. Các đường clock, reset và timing qua biên macro được xem xét khi phân tích top; một black box chỉ có hình học không đủ để kết luận timing của toàn core.
+Thứ hai, 80 SRAM hard macro phục vụ lưu feature, weight và kết quả tính toán. Các nghiên cứu placement [4]–[6], [7] cho thấy cần xem xét tài nguyên định tuyến, phân bố chân và kết nối khi bố trí macro. Đề tài áp dụng Macro-Aware Floorplanning, trong đó SRAM locality và kênh định tuyến là các lựa chọn cần đánh giá. Khoảng cách SRAM–logic được đối chiếu với wirelength và congestion; việc tăng khoảng cách giữa row phải được báo cáo cùng phần diện tích tăng thêm. Placement blockage và routing blockage được phân biệt theo mục đích và lớp áp dụng. Dây đi phía trên macro chỉ bị coi là không hợp lệ khi vi phạm vùng cấm, lớp hoặc quy tắc công nghệ tương ứng.
+
+
+Hình 1. Kiến trúc phân cấp của bộ tăng tốc GEMM INT8 32×32, gồm 32 hardened row macro và 80 hard SRAM được bố trí theo luồng dữ liệu.
+Thứ ba, nhóm đã quan sát trường hợp GLS cho kết quả GEMM sai sau bước repair_timing trong khi LVS của phiên bản đó vẫn khớp. Giả thuyết nguyên nhân là thay đổi ánh xạ chân của một cell có các ngõ vào không hoán đổi tương đương. Nghiên cứu lưu netlist trước và sau, instance, hàm Boolean và testcase để tái hiện, xác lập nguyên nhân trước khi kết luận về lỗi công cụ. Trường hợp này được dùng để đánh giá C3: xác định checkpoint nào phát hiện và định vị được sai khác, vì DRC/LVS không đối chiếu trực tiếp hành vi final netlist với RTL tham chiếu.
+4.2. Quy trình triển khai và đánh giá Physical Design
+Quy trình nghiên cứu được chia thành bốn giai đoạn chính.
+1. Chuẩn hóa và kiểm chứng RTL: Điều chỉnh bộ nhớ và cấu hình của RTL FPGA cho môi trường ASIC. Phép so sánh RTL FPGA với RTL ASIC được tách khỏi kiểm chứng RTL với gate-level netlist. Mỗi phép kiểm ghi rõ đối tượng, mô hình bộ nhớ, reset, trạng thái khởi tạo và các giả thiết tại biên. Các testcase về số có dấu, dữ liệu biên INT8 và tích lũy được đối chiếu với đặc tả; kết quả PASS chỉ được diễn giải trong phạm vi phép kiểm đã thực hiện.
+2. Triển khai vật lý phân cấp: Harden PE Row qua synthesis, floorplanning, placement, CTS và routing, sau đó tích hợp các PE-row macro, SRAM và logic top vào core. Khóa cấu hình tham chiếu B0 gồm RTL, macro views, PDK, công cụ, constraint, seed và cấu hình máy. So sánh các cách bố trí SRAM và kênh định tuyến trong cùng cấu trúc macro; tổng chi phí được tách thành hardening row một lần và triển khai top. Flat flow cùng quy mô là đối chứng bổ sung khi tài nguyên cho phép. Nếu không hoàn tất, báo cáo bước dừng và tài nguyên đã dùng, không suy ra mức cải thiện so với một flat baseline chưa có kết quả tương ứng.
+3. Tối ưu khả năng định tuyến: So sánh từng yếu tố SRAM placement, buffering, channel, blockage và antenna repair với cấu hình tham chiếu phù hợp. Mỗi lượt thay đổi một yếu tố chính; các cấu hình có nhiều thay đổi được ghi rõ để phân biệt tác động kết hợp. Theo dõi tổng và mức overflow lớn nhất sau global routing, marker vi phạm detailed routing (DRT), wirelength thực, via count, setup/hold slack, runtime và RAM đỉnh. Các cấu hình đại diện được thử thêm seed khi có điều kiện; kết quả một seed không được khái quát thành kết luận về độ ổn định. Việc sửa antenna phải được kiểm tra lại về routing, timing và chức năng nếu netlist thay đổi. Cấu hình công cụ được giữ thống nhất; thí nghiệm đổi phiên bản công cụ được báo cáo riêng.
+4. Kiểm chứng và đánh giá kết quả: So sánh RTL PE Row với netlist sau synthesis và final netlist để khoanh vùng sai khác khi hardening; sau đó chạy GLS trên core có mô hình chức năng của row, SRAM và standard cell. Đối chiếu phiên bản lỗi với phiên bản đã sửa, ghi checkpoint đầu tiên phát hiện sai khác, mismatch, phạm vi định vị, runtime và RAM. Nếu abstraction hoặc black box được sử dụng trong phép kiểm tương đương, nêu rõ phần hành vi chưa được chứng minh; timeout được tách khỏi PASS. GLS không SDF và GLS có back-annotation, nếu thực hiện, được báo cáo riêng. Một trường hợp lỗi chỉ hỗ trợ kết luận trong trường hợp khảo sát, không xác lập tỷ lệ bao phủ mọi lỗi công cụ.
+Trong giai đoạn đánh giá, detailed-routing DRC, full-layout DRC, antenna và LVS được báo cáo độc lập, kèm công cụ và bộ luật sử dụng; overflow bằng 0 hoặc router DRC bằng 0 không đồng nghĩa mọi phép signoff đều đạt. STA kiểm tra setup và hold tại các tổ hợp PVT/RC mà mô hình hỗ trợ, ghi rõ thư viện, điện áp, nhiệt độ, I/O constraint, clock uncertainty và đường chưa ràng buộc. Mục tiêu 100 MHz tương ứng chu kỳ 10 ns; kết luận đạt timing chỉ áp dụng cho corner và phạm vi đã phân tích. Diện tích được phân biệt thành core outline, die outline, macro area và standard-cell area, tránh cộng trùng cell bên trong macro.
+Thông lượng đỉnh lý thuyết tại 100 MHz là 204,8 GOPS theo quy ước một MAC bằng hai phép toán và 1.024 PE thực hiện một MAC mỗi chu kỳ. Throughput hữu ích được tính từ số phép toán hoàn tất chia cho thời gian workload, nêu rõ có bao gồm truyền dữ liệu, nạp và xả mảng hay không. Công suất dùng activity VCD, mô hình thư viện và ký sinh ở mức triển khai tương ứng; phạm vi tính phải làm rõ công suất nội bộ row macro, SRAM, logic và clock tree. Hiệu quả năng lượng được tính bằng throughput hữu ích chia cho công suất trung bình trên cùng workload và cửa sổ hoạt động. Phần công suất chưa có mô hình được ghi nhận là giới hạn, không được ngầm coi là đã tính đủ.
+Trên cơ sở core, giao tiếp AXI4-Lite và AXI4-Stream được kiểm chứng về truyền nhận, reset và backpressure. Overhead area, timing và power chỉ được so sánh ở cùng giai đoạn triển khai. Khi tích hợp vật lý toàn bộ GEMM_top hoàn tất, nhóm bổ sung GDSII và các phép kiểm tương ứng; kết quả synthesis của AXI không được xem là PPA post-route của top hoàn chỉnh.
+
+Hình 2. Quy trình nghiên cứu từ kiểm chứng RTL, triển khai vật lý phân cấp, tối ưu routability đến xác minh chức năng sau layout và đánh giá PPA.
+5. Kế hoạch nghiên cứu
+Nghiên cứu dự kiến thực hiện trong tám tuần, kế thừa GEMM core và AXI IP đã phát triển. Kế hoạch ưu tiên khóa dữ liệu tham chiếu, hoàn thiện thí nghiệm cho C1/C2 và kiểm chứng C3 trước phần tích hợp AXI mở rộng. Các thành viên phối hợp thực hiện; nhiệm vụ và phần đóng góp cụ thể được ghi trong nhật ký dự án để đối chiếu khi tổng hợp kết quả.
+Bảng 1. Lịch trình nghiên cứu
+STT
+Thời gian
+Công việc
+Sản phẩm đầu ra
+Phụ trách
+1
+Tuần 1
+Rà soát tài liệu trực tiếp cho RG1/RG2; kiểm kê RTL, macro và báo cáo hiện có; chốt metric và kế hoạch đối chứng.
+Tổng quan tài liệu, sơ đồ hierarchy và kế hoạch thí nghiệm gắn với C1–C3.
+Tất cả thành viên
+2
+Tuần 2
+Chuẩn hóa RTL ASIC, kiểm chứng với RTL FPGA; rà soát macro views, constraint và khóa cấu hình B0.
+RTL tham chiếu, baseline có thể chạy lại và giả thiết kiểm chứng.
+Tất cả thành viên
+3
+Tuần 3–4
+Đánh giá SRAM placement, channel, buffering, blockage và antenna repair; lưu các lượt thành công và thất bại.
+Bảng đối chứng routing, timing, area, runtime và RAM cho C1/C2.
+Tất cả thành viên
+4
+Tuần 5
+Phân tích đánh đổi, chọn cấu hình; đánh giá antenna và timing tại các corner được mô hình hỗ trợ.
+Cấu hình được lựa chọn, báo cáo đa corner và giới hạn còn lại.
+Tất cả thành viên
+5
+Tuần 6
+Tái hiện sai khác chức năng, đánh giá checkpoint C3; kiểm tra layout, netlist, STA và ước tính power.
+Bằng chứng C3; netlist và GDSII cùng phiên bản; báo cáo kiểm chứng và PPA core.
+Tất cả thành viên
+6
+Tuần 7
+Kiểm chứng AXI, đo overhead ở cùng giai đoạn; tích hợp vật lý nếu tài nguyên và tiến độ cho phép.
+Báo cáo AXI ở mức thực sự hoàn thành, kết quả tích hợp bổ sung nếu đạt yêu cầu.
+Tất cả thành viên
+7
+Tuần 8
+Đối chiếu dữ liệu, tổng hợp ba đóng góp và hạn chế; hoàn thiện báo cáo, thuyết trình và bản thảo.
+Báo cáo nghiên cứu, slide, bản thảo bài báo và bộ cấu hình tái lập.
+Tất cả thành viên
+6. Kết quả dự kiến
+Về phương pháp, nghiên cứu dự kiến cung cấp quy trình triển khai phân cấp cho GEMM 32×32 có đặc tả macro và cấu hình tích hợp rõ ràng, cùng bảng so sánh các phương án SRAM placement và kênh định tuyến cho C1. Đối với C2, sản phẩm là bộ thí nghiệm có baseline, lịch sử thay đổi và dữ liệu routing, timing, area, runtime, RAM, qua đó chỉ ra điều kiện cải thiện và chi phí đánh đổi của từng phương án. Đối với C3, sản phẩm gồm hồ sơ tái hiện sai khác chức năng, đối chiếu netlist trước và sau sửa, kết quả checkpoint và chi phí kiểm chứng. Đóng góp được đánh giá bằng các bằng chứng này; việc sử dụng hierarchy, equivalence checking hoặc GLS tự thân không được xem là kỹ thuật mới.
+Về thực tiễn, kết quả sơ bộ của nhóm đã có core GDSII, detailed-routing DRC bằng 0, LVS khớp và GLS thành công trên các ca đã chạy. Nghiên cứu tiếp tục gắn những kết quả này với đúng phiên bản thiết kế, kiểm tra phạm vi signoff và tổng hợp PPA theo định nghĩa thống nhất. Thông lượng 204,8 GOPS tại 100 MHz là giá trị đỉnh lý thuyết theo giả thiết nêu ở trên; throughput workload và hiệu quả năng lượng được xác định từ dữ liệu hoạt động tương ứng. Antenna còn lại, timing tại slow corner và tích hợp vật lý AXI-enabled GEMM_top được báo cáo như các hạng mục cần hoàn thiện. Các kết luận được giới hạn trong thiết kế và cấu hình đã đánh giá, không suy rộng sang mọi accelerator hoặc số đo trên silicon. Sản phẩm cuối gồm RTL, script, cấu hình, các macro views được phép chia sẻ, core GDSII và báo cáo thực nghiệm. Nhóm hướng tới hoàn thiện bản thảo để gửi hội nghị hoặc tạp chí phù hợp với thiết kế vật lý, EDA và bộ tăng tốc phần cứng.
+Hình 3:
+Tài liệu tham khảo
+[1] N. P. Jouppi et al., “In-Datacenter Performance Analysis of a Tensor Processing Unit,” Proceedings of the 44th Annual International Symposium on Computer Architecture (ISCA), pp. 1–12, 2017. DOI: https://doi.org/10.1145/3079856.3080246.
+[2] Y.-H. Chen, T. Krishna, J. S. Emer, and V. Sze, “Eyeriss: An Energy-Efficient Reconfigurable Accelerator for Deep Convolutional Neural Networks,” IEEE Journal of Solid-State Circuits, vol. 52, no. 1, pp. 127–138, 2017. DOI: https://doi.org/10.1109/JSSC.2016.2616357.
+[3] M. Shalan and T. Edwards, “Building OpenLANE: A 130nm OpenROAD-based Tapeout-Proven Flow: Invited Paper,” 2020 IEEE/ACM International Conference on Computer-Aided Design (ICCAD), pp. 1–6, 2020. DOI: https://doi.org/10.1145/3400302.3415735.
+[4] M.-K. Hsu, S. Chou, T.-H. Lin, and Y.-W. Chang, “Routability-Driven Analytical Placement for Mixed-Size Circuit Designs,” 2011 IEEE/ACM International Conference on Computer-Aided Design (ICCAD), pp. 80–84, 2011. DOI: https://doi.org/10.1109/ICCAD.2011.6105309.
+[5] C.-C. Tan, W.-H. Chen, Z.-M. Yeh, and W.-K. Cheng, “Routability-Driven Macro Placement Considering Pins Location,” 2017 International Conference on Electron Devices and Solid-State Circuits (EDSSC), 2017. DOI: https://doi.org/10.1109/EDSSC.2017.8126485.
+[6] Y. L. Chua, M. S. Wu, and Y. G. Chen, “CARDS: A Novel Detailed Macro Placement Framework for Minimizing Wirelength,” 2024 21st International SoC Design Conference (ISOCC), pp. 131–132, 2024. DOI: https://doi.org/10.1109/ISOCC62682.2024.10762423.
+[7] A. B. Kahng, R. Varadarajan, and Z. Wang, “Hier-RTLMP: A Hierarchical Automatic Macro Placer for Large-Scale Complex IP Blocks,” IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems, vol. 43, no. 5, pp. 1552–1565, 2024. DOI: https://doi.org/10.1109/TCAD.2023.3346284.
+[8] P. Sauter, T. Benz, P. Scheffler, F. K. Gürkaynak, and L. Benini, “Insights from Basilisk: Are Open-Source EDA Tools Ready for a Multi-Million-Gate, Linux-Booting RV64 SoC Design?,” arXiv preprint arXiv:2405.04257, 2024. DOI: https://doi.org/10.48550/arXiv.2405.04257.
+[9] S.-Y. Huang, K.-T. Cheng, K.-C. Chen, C.-Y. Huang, and F. Brewer, “AQUILA: An Equivalence Checking System for Large Sequential Designs,” IEEE Transactions on Computers, vol. 49, no. 5, pp. 443–464, 2000. DOI: https://doi.org/10.1109/12.859539.
+[10] E. I. Baungarten-Leon et al., “Comprehensive RTL-to-GDSII Workflow for Custom Embedded FPGA Architectures Using Open-Source Tools,” Electronics, vol. 14, no. 19, Art. no. 3866, 2025. DOI: https://doi.org/10.3390/electronics14193866.
+[11] YosysHQ, “EQY documentation,” tài liệu kỹ thuật trực tuyến. https://yosyshq.readthedocs.io/projects/eqy/en/latest/. Truy cập ngày 17 tháng 10 năm 2026.
+
+
+CAM KẾT VỀ VIỆC SỬ DỤNG TRÍ TUỆ NHÂN TẠO CÓ TRÁCH NHIỆM TRONG NGHIÊN CỨU
+Chúng tôi là các tác giả của công trình nghiên cứu có tiêu đề “Hierarchical Physical Implementation, Routability Optimization, and Post-Layout Functional Verification of a 32×32 INT8 GEMM Accelerator in SKY130” và cam kết sử dụng trí tuệ nhân tạo (AI) minh bạch, có trách nhiệm trong quá trình chuẩn bị hồ sơ, cụ thể như sau:
+1. AI được sử dụng để hỗ trợ chỉnh sửa ngữ pháp, cấu trúc, cách diễn đạt, rà soát tính nhất quán của lập luận và số liệu, tra cứu và đối chiếu tài liệu tham khảo, đề xuất hiệu đính bản đề xuất.
+2. Không sử dụng AI để tạo dữ liệu giả hoặc thay thế bằng chứng thực nghiệm. Nội dung và tài liệu do AI gợi ý phải được đối chiếu với tài liệu gốc và dữ liệu thực nghiệm tương ứng; một phép kiểm chưa thực hiện không được mô tả như kết quả đã đạt.
+3. Việc sử dụng AI phải được các tác giả kiểm tra và xác nhận. Mỗi tác giả chịu trách nhiệm về tính chính xác, minh bạch và nguyên gốc của phần nội dung mình phụ trách, bao gồm trích dẫn và tài liệu tham khảo, đồng thời bảo đảm phù hợp với quy định cuộc thi.
+4. Các tác giả có trách nhiệm thông báo cho đồng tác giả về phạm vi sử dụng AI tạo sinh và công nghệ hỗ trợ AI, cùng rà soát bản cuối trước khi ký xác nhận.
+Chúng tôi chịu trách nhiệm về tính chính xác và minh bạch của các thông tin được cung cấp trong hồ sơ.
+
+ Khoa D. Nguyen
+ Quyen T. N. Ngo
+ Ky C. Nguyen
+ Nhan V. H. Pham
+(Chữ ký và họ tên đầy đủ)
+(Chữ ký và họ tên đầy đủ)
+(Chữ ký và họ tên đầy đủ)
+(Chữ ký và họ tên đầy đủ)
+ 
