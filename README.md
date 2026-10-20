@@ -7,7 +7,7 @@ Website nghiên cứu tĩnh cho GEMM INT8 32×32 trên SKY130. Chạy hoàn toà
 Cần Node.js20 trở lên. Không có dependency npm, không cần `npm install`.
 
 ```powershell
-cd 'D:\NGHIEN_CUU_KHOA_HOC\RESFES LẦN 2\WED_ASIC_GEMM'
+cd 'D:\NGHIEN_CUU_KHOA_HOC\RESFES LẦN 2\WEB_ASIC_GEMM'
 npm run dev
 # Nếu npm chưa nằm trong PATH: node scripts/serve.mjs
 ```
