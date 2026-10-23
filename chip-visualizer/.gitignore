@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.tooling/
+test-results/
+playwright-report/
+__pycache__/
+*.tsbuildinfo

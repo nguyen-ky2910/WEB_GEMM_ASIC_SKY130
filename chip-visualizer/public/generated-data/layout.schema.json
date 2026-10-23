@@ -1,0 +1,10 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","title":"GEMM32 normalized macro geometry v1","type":"object",
+  "required":["die","origin","macros","kind","source"],
+  "properties":{
+    "die":{"type":"array","prefixItems":[{"type":"number","exclusiveMinimum":0},{"type":"number","exclusiveMinimum":0}],"minItems":2,"maxItems":2,"description":"Width, height in micrometers"},
+    "origin":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},
+    "kind":{"enum":["RECONSTRUCTED","REAL DATA","DEMO"]},"source":{"type":"string"},"unresolvedMasters":{"type":"array","items":{"type":"string"}},
+    "macros":{"type":"array","maxItems":20000,"items":{"type":"object","required":["id","name","type","master","x","y","w","h","orientation","source","rtl"],"properties":{"id":{"type":"string"},"name":{"type":"string"},"master":{"type":"string"},"type":{"type":"string"},"x":{"type":"number"},"y":{"type":"number"},"w":{"type":"number","exclusiveMinimum":0},"h":{"type":"number","exclusiveMinimum":0},"orientation":{"type":"string"},"rtl":{"type":["string","null"]},"source":{"type":"string"}}}}
+  }
+}

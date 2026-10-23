@@ -1,0 +1,5 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","title":"Digital waveform v1","type":"object",
+  "required":["signals","end","timescale","source","kind"],
+  "properties":{"end":{"type":"number","minimum":0},"timescale":{"type":"string"},"source":{"type":"string"},"kind":{"enum":["REAL DATA","REPLAY","DEMO"]},"truncated":{"type":"boolean"},"signals":{"type":"array","maxItems":10000,"items":{"type":"object","required":["name","width","events"],"properties":{"name":{"type":"string"},"width":{"type":"integer","minimum":1},"events":{"type":"array","description":"Sorted [time, binary / x / z string] changes; initial unknown until first event","items":{"type":"array","prefixItems":[{"type":"number","minimum":0},{"type":"string","pattern":"^[01xXzZ]+$"}],"minItems":2,"maxItems":2}}}}}}
+}

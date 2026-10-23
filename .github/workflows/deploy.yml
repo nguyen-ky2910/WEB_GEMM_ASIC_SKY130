@@ -1,47 +1,85 @@
-
-name: Deploy GEMM ASIC Website
+name: Deploy GEMM ASIC websites
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: github-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
+    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
+      - name: Checkout existing repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: "22"
-
-      - name: Build website
+          node-version: "24"
+      - name: Install pinned package manager
+        run: npm install --global pnpm@11.25.0
+      - name: Install new website dependencies only
+        run: pnpm --dir chip-visualizer install --frozen-lockfile
+      - name: Check new website
+        working-directory: chip-visualizer
+        run: |
+          pnpm run typecheck
+          pnpm run lint
+          pnpm test
+          pnpm run test:parsers
+          pnpm run check:i18n
+          python scripts/extraction/export_docs.py
+      - name: Build existing website unchanged at the root
         run: npm run build
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload website
-        uses: actions/upload-pages-artifact@v3
+      - name: Build Silicon Explorer for the gemm32 subdirectory
+        run: pnpm --dir chip-visualizer run build
+      - name: Compose and audit one Pages artifact for both websites
+        run: node chip-visualizer/scripts/deployment/compose-pages.mjs
+      - name: Install browser for production checks
+        working-directory: chip-visualizer
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Verify both websites on a strict static server
+        shell: bash
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4180/WEB_GEMM_ASIC_SKY130/gemm32/
+          PLAYWRIGHT_COMBINED_SITE: "1"
+        run: |
+          python -m http.server 4180 --bind 127.0.0.1 --directory .tooling/pages-preview > .tooling/pages-server.log 2>&1 &
+          pages_server_pid=$!
+          trap 'kill "$pages_server_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent "$PLAYWRIGHT_BASE_URL" > /dev/null; then break; fi
+            sleep 1
+          done
+          pnpm --dir chip-visualizer exec playwright test
+      - name: Upload both websites together
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: ./dist
 
-      - name: Deploy
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure existing GitHub Pages site
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - name: Deploy the verified combined artifact
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
