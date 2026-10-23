@@ -40,11 +40,29 @@ test("3D canvas, selection, camera, panels, bilingual state and paused animation
     .getByRole("switch", { name: "Auto rotate", exact: true })
     .uncheck();
   await page.getByTitle("Top", { exact: true }).first().click();
-  await page.waitForTimeout(900);
-  const labelBox = await page
+  const macroLabel = page
     .locator(".projected-labels")
-    .getByText("PE ROW 00", { exact: true })
-    .boundingBox();
+    .getByText("PE ROW 00", { exact: true });
+  // Software WebGL advances camera transitions at different frame rates on CI.
+  // Use the label as a raycast coordinate only after its projection has settled.
+  let previous: { x: number; y: number } | null = null;
+  let stableSamples = 0;
+  await expect
+    .poll(
+      async () => {
+        const box = await macroLabel.boundingBox();
+        if (!box) return (stableSamples = 0);
+        const delta = previous
+          ? Math.hypot(box.x - previous.x, box.y - previous.y)
+          : Infinity;
+        previous = box;
+        stableSamples = delta < 0.05 ? stableSamples + 1 : 0;
+        return stableSamples;
+      },
+      { timeout: 20000, intervals: [250] },
+    )
+    .toBeGreaterThanOrEqual(3);
+  const labelBox = await macroLabel.boundingBox();
   expect(labelBox).not.toBeNull();
   await page.mouse.click(
     labelBox!.x + labelBox!.width / 2,
